@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Terraform
         run: |
-          cd infra
+          cd infrastructure
           terraform init
           terraform apply -auto-approve
         env:
