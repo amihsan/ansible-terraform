@@ -1,0 +1,40 @@
+---
+- hosts: app_server
+  become: true
+  tasks:
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull Flask backend image
+      docker_image:
+        name: flask-backend
+        source: local
+
+    - name: Pull React frontend image
+      docker_image:
+        name: react-frontend
+        source: local
+
+    - name: Run Flask container
+      docker_container:
+        name: flask-app
+        image: flask-backend
+        state: started
+        ports:
+          - "5000:5000"
+
+    - name: Run React container
+      docker_container:
+        name: react-app
+        image: react-frontend
+        state: started
+        ports:
+          - "80:3000"
