@@ -1,2 +1,2 @@
 [app_server]
-<public-ip-of-ec2-instance> ansible_ssh_user=ec2-user ansible_ssh_private_key_file=<path-to-private-key>
+18.156.82.96 ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/rumi/Downloads/aws_key/terraform_key.pem

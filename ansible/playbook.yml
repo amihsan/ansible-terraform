@@ -3,9 +3,19 @@
   become: true
   tasks:
     - name: Install Docker
-      yum:
+      dnf:
         name: docker
         state: present
+
+    - name: Install pip
+      dnf:
+        name: python3-pip
+        state: present
+
+    - name: Install Docker SDK for Python
+      pip:
+        name: docker
+        executable: pip3
 
     - name: Start Docker service
       service:
@@ -14,27 +24,13 @@
         enabled: yes
 
     - name: Pull Flask backend image
-      docker_image:
-        name: flask-backend
-        source: local
+      command: docker pull amihsan/flask-terraform-backend:latest
 
     - name: Pull React frontend image
-      docker_image:
-        name: react-frontend
-        source: local
+      command: docker pull amihsan/react-terraform-frontend:latest
 
     - name: Run Flask container
-      docker_container:
-        name: flask-app
-        image: flask-backend
-        state: started
-        ports:
-          - "5000:5000"
+      command: docker run -d -p 5000:5000 --name flask-app amihsan/flask-terraform-backend:latest
 
     - name: Run React container
-      docker_container:
-        name: react-app
-        image: react-frontend
-        state: started
-        ports:
-          - "80:3000"
+      command: docker run -d -p 80:3000 --name react-app amihsan/react-terraform-frontend:latest
