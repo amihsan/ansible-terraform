@@ -39,6 +39,7 @@ jobs:
         run: |
           cd infrastructure
           terraform init
+          terraform import aws_security_group.app_sg sg-0c013308912946f82 || true
           terraform apply -auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
