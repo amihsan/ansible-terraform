@@ -11,7 +11,7 @@ function App() {
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
-        return response.json();
+        return response.json(); // This line assumes the response is JSON
       })
       .then((data) => {
         setMessage(data.message);
@@ -19,6 +19,12 @@ function App() {
       })
       .catch((err) => {
         console.error(err);
+
+        // Attempt to log the actual response in case it's HTML or something else
+        fetch(`${process.env.REACT_APP_API_URL}/`)
+          .then((response) => response.text()) // Get the response as text
+          .then((text) => console.error("Response text:", text));
+
         setError("Failed to fetch message.");
         setLoading(false);
       });
