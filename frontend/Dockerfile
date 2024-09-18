@@ -4,13 +4,16 @@ FROM node:20.9.0-alpine
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the React app code into the container
-COPY . .
+# Copy the package.json and package-lock.json first for better build caching
+COPY package*.json ./
 
-# Install the dependencies
+# Install dependencies
 RUN npm install
 
-# Build the React app
+# Copy the rest of the application
+COPY . .
+
+# Build the React app for production
 RUN npm run build
 
 # Serve the app with a lightweight web server
