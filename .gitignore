@@ -5,3 +5,4 @@
 /infrastructure/.terraform.tfstate.lock.info
 /infrastructure/terraform.tfstate
 /hosts
+/security_group.tf
