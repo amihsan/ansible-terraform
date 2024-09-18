@@ -1,5 +1,3 @@
-# .github/workflows/deploy.yml
-
 name: Deploy to EC2
 
 on:
@@ -12,29 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Set up Python for Ansible
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
           python-version: "3.x"
 
+      # Step 3: Install Ansible dependencies
       - name: Install dependencies
         run: |
           pip install ansible
 
+      # Step 4: Build Docker images for the backend and frontend
       - name: Build Docker images
         run: |
           docker build -t amihsan/flask-terraform-backend:latest ./backend
           docker build -t amihsan/react-terraform-frontend:latest ./frontend
 
+      # Step 5: Push Docker images to DockerHub
       - name: Push Docker images
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker push amihsan/flask-terraform-backend:latest
           docker push amihsan/react-terraform-frontend:latest
 
+      # Step 6: Run Terraform to provision AWS infrastructure
       - name: Run Terraform
         run: |
           cd infrastructure
@@ -45,9 +49,77 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      # Step 7: Capture the EC2 public IP from Terraform output
+      - name: Get EC2 Public IP from Terraform
+        id: tf_output
+        run: |
+          cd infrastructure
+          PUBLIC_IP=$(terraform output -raw public_ip)
+          echo "::set-output name=PUBLIC_IP::$PUBLIC_IP"
+
+      # Step 8: Update Ansible inventory with the EC2 public IP
+      - name: Update Ansible Inventory
+        run: |
+          echo "[app_server]" > ansible/hosts
+          echo "${{ steps.tf_output.outputs.PUBLIC_IP }}" >> ansible/hosts
+
+      # Step 9: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts ansible/playbook.yml
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_PRIVATE_KEY_FILE: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
+# # .github/workflows/deploy.yml
+
+# name: Deploy to EC2
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: "3.x"
+
+#       - name: Install dependencies
+#         run: |
+#           pip install ansible
+
+#       - name: Build Docker images
+#         run: |
+#           docker build -t amihsan/flask-terraform-backend:latest ./backend
+#           docker build -t amihsan/react-terraform-frontend:latest ./frontend
+
+#       - name: Push Docker images
+#         run: |
+#           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+#           docker push amihsan/flask-terraform-backend:latest
+#           docker push amihsan/react-terraform-frontend:latest
+
+#       - name: Run Terraform
+#         run: |
+#           cd infrastructure
+#           terraform init
+#           terraform import aws_security_group.app_sg sg-0c013308912946f82 || true
+#           terraform apply -auto-approve
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+#       - name: Run Ansible Playbook
+#         run: |
+#           ansible-playbook -i ansible/hosts ansible/playbook.yml
+#         env:
+#           ANSIBLE_HOST_KEY_CHECKING: "false"
+#           ANSIBLE_PRIVATE_KEY_FILE: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
