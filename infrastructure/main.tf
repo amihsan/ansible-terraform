@@ -78,8 +78,9 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-output "public_ip" {
-  value = length(aws_instance.app_server.*.public_ip) > 0 ? aws_instance.app_server[0].public_ip : "No instance created"
+# Output the public IP of the existing or newly created instance
+output "instance_public_ip" {
+  value = local.instance_exists ? data.aws_instance.existing_instance.public_ip : aws_instance.app_server[0].public_ip
 }
 
 
