@@ -16,6 +16,12 @@ data "aws_instances" "existing_instance" {
   }
 }
 
+# If an instance exists, get the instance ID
+data "aws_instance" "existing_instance_details" {
+  count       = length(data.aws_instances.existing_instance.ids) > 0 ? 1 : 0
+  instance_id = data.aws_instances.existing_instance.ids[0]
+}
+
 # Check if the instance exists
 locals {
   instance_exists = length(data.aws_instances.existing_instance.ids) > 0
@@ -88,7 +94,7 @@ resource "aws_security_group" "app_sg" {
 
 # Output the public IP of the existing or newly created instance
 output "public_ip" {
-  value = local.instance_exists ? data.aws_instances.existing_instance.public_ips[0] : aws_instance.app_server[0].public_ip
+  value = local.instance_exists ? data.aws_instance.existing_instance_details[0].public_ip : aws_instance.app_server[0].public_ip
 }
 
 
