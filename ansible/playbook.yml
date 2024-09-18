@@ -63,7 +63,7 @@
         published_ports:
           - "80:3000"
         env:
-          REACT_APP_API_URL: "http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:5000"
+          REACT_APP_API_URL: "http://{{ hostvars[inventory_hostname].ansible_facts.ec2_metadata.public_ipv4 }}:5000"
 
     # - name: Run React container
     #   docker_container:
