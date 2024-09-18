@@ -13,24 +13,27 @@ resource "aws_instance" "app_server" {
   tags = {
     Name = "FullstackAppServer"
   }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo yum install docker -y",
-      "sudo service docker start",
-      "sudo usermod -a -G docker ec2-user"
-    ]
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    private_key = file(var.private_key_path)
-    host        = self.public_ip
-  }
 }
 
 output "public_ip" {
   value = aws_instance.app_server.public_ip
 }
+
+#   provisioner "remote-exec" {
+#     inline = [
+#       "sudo yum install docker -y",
+#       "sudo service docker start",
+#       "sudo usermod -a -G docker ec2-user"
+#     ]
+#   }
+
+#   connection {
+#     type        = "ssh"
+#     user        = "ec2-user"
+#     private_key = file(var.private_key_path)
+#     host        = self.public_ip
+#   }
+# }
+
+
 
