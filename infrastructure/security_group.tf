@@ -16,20 +16,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"] # Allow HTTP access from anywhere
   }
 
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow access to React frontend
-  }
-
-  ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow access to Flask backend
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -57,6 +43,20 @@ resource "aws_security_group" "app_sg" {
 #     cidr_blocks = ["0.0.0.0/0"] # Allow HTTP access from anywhere
 #   }
 
+#   ingress {
+#     from_port   = 3000
+#     to_port     = 3000
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"] # Allow access to React frontend
+#   }
+
+#   ingress {
+#     from_port   = 5000
+#     to_port     = 5000
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"] # Allow access to Flask backend
+#   }
+
 #   egress {
 #     from_port   = 0
 #     to_port     = 0
@@ -64,3 +64,5 @@ resource "aws_security_group" "app_sg" {
 #     cidr_blocks = ["0.0.0.0/0"] # Allow all outbound traffic
 #   }
 # }
+
+
