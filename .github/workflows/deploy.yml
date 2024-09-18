@@ -63,9 +63,10 @@ jobs:
           echo "[app_server]" > ansible/hosts
           echo "${{ steps.tf_output.outputs.PUBLIC_IP }}" >> ansible/hosts
 
-      # Step 9: Create SSH private key file
-      - name: Create SSH Key File
+      # Step 9: Create .ssh directory and SSH private key file
+      - name: Create .ssh directory and SSH key file
         run: |
+          mkdir -p /home/runner/.ssh
           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
           chmod 600 /home/runner/.ssh/id_rsa
 
