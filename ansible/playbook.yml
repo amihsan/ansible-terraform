@@ -30,7 +30,7 @@
         state: absent
         force_kill: yes
       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
