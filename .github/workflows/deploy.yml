@@ -32,33 +32,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # # Step 5: Build and push Docker images for the backend and frontend
-      # - name: Build and Push Docker Images
-      #   run: |
-      #     docker build -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
-      #     docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
-      #     docker build -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
-      #     docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
-
-      # # Step 4: Build Docker images for the backend and frontend
-      # - name: Build Docker images
-      #   run: |
-      #     docker build -t amihsan/flask-terraform-backend:latest ./backend
-      #     docker build -t amihsan/react-terraform-frontend:latest ./frontend
-
-      # # Step 5: Push Docker images to DockerHub
-      # - name: Push Docker images
-      #   run: |
-      #     echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-      #     docker push amihsan/flask-terraform-backend:latest
-      #     docker push amihsan/react-terraform-frontend:latest
+      # Step 5: Build and push Docker images for the backend and frontend
+      - name: Build and Push Docker Images
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
 
       # Step 6: Run Terraform to provision AWS infrastructure
       - name: Run Terraform
         run: |
           cd infrastructure
           terraform init
-          terraform import aws_security_group.app_sg sg-0ca4a65e521c80a7e || true
+          terraform import aws_security_group.app_sg sg-04164ff62047f959b || true
           terraform apply -auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
