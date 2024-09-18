@@ -35,8 +35,8 @@ function App() {
   return (
     <div>
       <h1>{message}</h1>
-      <h2>"Ansible"</h2>
-      <h2>"Terraform"</h2>
+      <h2>Ansible</h2>
+      <h2>Terraform</h2>
     </div>
   );
 }
