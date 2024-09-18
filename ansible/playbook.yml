@@ -32,9 +32,8 @@
       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
       ignore_errors: true
 
-    - name: Remove all Docker images
-      command: docker rmi $(docker images -q) --force
-      ignore_errors: true
+    - name: Remove all unused Docker images
+      command: docker image prune -af
 
     - name: Pull Flask backend image
       docker_image:
@@ -97,8 +96,9 @@
 #       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
 #       ignore_errors: true
 
-#     - name: Remove all unused Docker images
-#       command: docker image prune -af
+#     - name: Remove all Docker images
+#       command: docker rmi $(docker images -q) --force
+#       ignore_errors: true
 
 #     - name: Pull Flask backend image
 #       docker_image:
