@@ -7,3 +7,4 @@
 /hosts
 /security_group.tf
 /frontend/.env
+/help.js
