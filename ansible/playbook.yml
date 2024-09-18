@@ -2,6 +2,9 @@
 - hosts: app_server
   become: true
   tasks:
+    - name: Gather EC2 instance metadata
+      ec2_metadata_facts:
+
     - name: Install Docker
       dnf:
         name: docker
