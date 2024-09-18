@@ -2,13 +2,6 @@ provider "aws" {
   region = "eu-central-1"
 }
 
-# Variable for the key_name (replace with your actual key name or set in a variable file)
-variable "key_name" {
-  description = "The name of the key pair to use for SSH access"
-  type        = string
-  default     = "terraform_key"
-}
-
 # Fetch existing instance by Name tag
 data "aws_instances" "existing_instance" {
   filter {
