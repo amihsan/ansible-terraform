@@ -38,7 +38,7 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
   tags = {
-    Name = ["AnsibleTerraformServer"] # Name = "FullstackAppServer"
+    Name = "AnsibleTerraformServer" # Name = "FullstackAppServer"
   }
 
   lifecycle {
