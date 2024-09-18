@@ -6,7 +6,7 @@ provider "aws" {
 # data "aws_instances" "existing_instance" {
 #   filter {
 #     name   = "tag:Name"
-#     values = ["FullstackAppServer"] # values = ["AnsibleTerraformServer"]
+#     values = ["FullstackAppServer"]
 #   }
 
 #   # Ensure we are only looking at running instances
@@ -52,7 +52,7 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
   # tags = {
-  #   Name = "FullstackAppServer" # Name = "AnsibleTerraformServer"
+  #   Name = "FullstackAppServer"
   # }
 
   tags = {

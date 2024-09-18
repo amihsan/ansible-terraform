@@ -6,7 +6,7 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("http://18.198.79.61:5000/")
+    fetch(`${process.env.REACT_APP_API_URL}/`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");

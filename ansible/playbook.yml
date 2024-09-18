@@ -54,7 +54,7 @@
         published_ports:
           - "5000:5000"
 
-    - name: Run React container
+    - name: Run React container with API URL environment variable
       docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
@@ -62,3 +62,14 @@
         restart_policy: always
         published_ports:
           - "80:3000"
+        env:
+          REACT_APP_API_URL: "http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:5000"
+
+    # - name: Run React container
+    #   docker_container:
+    #     name: react-app
+    #     image: amihsan/react-terraform-frontend:latest
+    #     state: started
+    #     restart_policy: always
+    #     published_ports:
+    #       - "80:3000"
