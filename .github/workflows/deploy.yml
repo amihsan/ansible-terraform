@@ -41,17 +41,43 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
 
       # Step 6: Run Terraform to provision AWS infrastructure
-      - name: Run Terraform
+      - name: Run Terraform Init
         run: |
           cd infrastructure
           terraform init
-          terraform import aws_security_group.app_sg sg-04164ff62047f959b || true
-          terraform apply -auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # Step 7: Capture the EC2 public IP from Terraform output
+      # Step 7: Generate Terraform Plan
+      - name: Generate Terraform Plan
+        run: |
+          cd infrastructure
+          terraform import aws_security_group.app_sg sg-04164ff62047f959b || true
+          terraform plan -out=terraform.plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Step 8: Review Terraform Plan
+      - name: Review Terraform Plan
+        run: |
+          cd infrastructure
+          terraform show terraform.plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Step 9: Apply Terraform Configuration
+      - name: Apply Terraform Configuration
+        run: |
+          cd infrastructure
+          terraform apply -auto-approve terraform.plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Step 10: Capture the EC2 public IP from Terraform output
       - name: Get EC2 Public IP from Terraform
         id: tf_output
         run: |
@@ -59,23 +85,104 @@ jobs:
           PUBLIC_IP=$(terraform output -raw public_ip)
           echo "::set-output name=PUBLIC_IP::$PUBLIC_IP"
 
-      # Step 8: Update Ansible inventory with the EC2 public IP
+      # Step 11: Update Ansible inventory with the EC2 public IP
       - name: Update Ansible Inventory
         run: |
           echo "[app_server]" > ansible/hosts
           echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
 
-      # Step 9: Create .ssh directory and SSH private key file
+      # Step 12: Create .ssh directory and SSH private key file
       - name: Create .ssh directory and SSH key file
         run: |
           mkdir -p /home/runner/.ssh
           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
           chmod 600 /home/runner/.ssh/id_rsa
 
-      # Step 10: Run the Ansible playbook to configure the EC2 instance
+      # Step 13: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts ansible/playbook.yml
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
+# name: Deploy to EC2
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # Step 1: Checkout the code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       # Step 2: Set up Python for Ansible
+#       - name: Set up Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: "3.x"
+
+#       # Step 3: Install Ansible dependencies
+#       - name: Install dependencies
+#         run: |
+#           pip install ansible
+
+#       # Step 4: Login to Dockerhub
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v1
+#         with:
+#           username: ${{ secrets.DOCKER_USERNAME }}
+#           password: ${{ secrets.DOCKER_PASSWORD }}
+
+#       # Step 5: Build and push Docker images for the backend and frontend
+#       - name: Build and Push Docker Images
+#         run: |
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
+#           docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
+#           docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
+
+#       # Step 6: Run Terraform to provision AWS infrastructure
+#       - name: Run Terraform
+#         run: |
+#           cd infrastructure
+#           terraform init
+#           terraform import aws_security_group.app_sg sg-04164ff62047f959b || true
+#           terraform apply -auto-approve
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+#       # Step 7: Capture the EC2 public IP from Terraform output
+#       - name: Get EC2 Public IP from Terraform
+#         id: tf_output
+#         run: |
+#           cd infrastructure
+#           PUBLIC_IP=$(terraform output -raw public_ip)
+#           echo "::set-output name=PUBLIC_IP::$PUBLIC_IP"
+
+#       # Step 8: Update Ansible inventory with the EC2 public IP
+#       - name: Update Ansible Inventory
+#         run: |
+#           echo "[app_server]" > ansible/hosts
+#           echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
+
+#       # Step 9: Create .ssh directory and SSH private key file
+#       - name: Create .ssh directory and SSH key file
+#         run: |
+#           mkdir -p /home/runner/.ssh
+#           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
+#           chmod 600 /home/runner/.ssh/id_rsa
+
+#       # Step 10: Run the Ansible playbook to configure the EC2 instance
+#       - name: Run Ansible Playbook
+#         run: |
+#           ansible-playbook -i ansible/hosts ansible/playbook.yml
+#         env:
+#           ANSIBLE_HOST_KEY_CHECKING: "false"
+#           ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
