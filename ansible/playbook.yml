@@ -28,13 +28,13 @@
       community.docker.docker_container:
         name: flask-app
         state: absent
-        force: yes
+        force_kill: yes
 
     - name: Stop and remove React container if exists
       community.docker.docker_container:
         name: react-app
         state: absent
-        force: yes
+        force_kill: yes
 
     - name: Pull Flask backend image
       community.docker.docker_image:
