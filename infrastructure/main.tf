@@ -6,7 +6,7 @@ provider "aws" {
 data "aws_instances" "existing_instance" {
   filter {
     name   = "tag:Name"
-    values = ["FullstackAppServer"]
+    values = ["FullstackAppServer125"]
   }
 
   # Ensure we are only looking at running instances
