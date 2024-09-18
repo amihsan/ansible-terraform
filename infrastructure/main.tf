@@ -79,7 +79,7 @@ resource "aws_security_group" "app_sg" {
 }
 
 # Output the public IP of the existing or newly created instance
-output "instance_public_ip" {
+output "public_ip" {
   value = local.instance_exists ? data.aws_instance.existing_instance.public_ip : aws_instance.app_server[0].public_ip
 }
 
