@@ -30,11 +30,11 @@
         state: absent
         force_kill: yes
       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Remove all Docker images
       command: docker rmi $(docker images -q) --force
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Pull Flask backend image
       docker_image:
