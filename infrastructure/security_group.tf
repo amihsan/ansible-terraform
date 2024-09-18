@@ -1,6 +1,7 @@
 resource "aws_security_group" "app_sg" {
   name        = "app-security-group"
   description = "Allow inbound traffic for application"
+  vpc_id      = "vpc-0023898c14a558e85 " # Replace with your VPC ID
 
   ingress {
     from_port   = 22
