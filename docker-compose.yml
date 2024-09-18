@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  flask:
+    image: amihsan/flask-terraform-backend:latest
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+
+  react:
+    image: amihsan/react-terraform-frontend:latest
+    container_name: react-app
+    ports:
+      - "80:3000"
+    environment:
+      - REACT_APP_API_URL=http://flask:5000 # Directly specify the API URL for React
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
