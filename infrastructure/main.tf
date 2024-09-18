@@ -4,7 +4,7 @@ provider "aws" {
 
 # Data source to get the existing instance
 data "aws_instance" "existing_instance" {
-  instance_id = "i-05b21ea00177df15e" # Replace with your existing instance ID
+  instance_id = "i-05b21ea00177df05e" # Replace with your existing instance ID
 }
 
 # Check if the existing instance is found
