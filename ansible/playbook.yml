@@ -1,7 +1,9 @@
----
 - hosts: app_server
   become: true
   tasks:
+    - name: Gather EC2 instance metadata
+      ec2_metadata_facts:
+
     - name: Install Docker
       dnf:
         name: docker
@@ -54,7 +56,7 @@
         published_ports:
           - "5000:5000"
 
-    - name: Run React container with API URL environment variable
+    - name: Run React container with public IP as environment variable
       docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
@@ -63,7 +65,7 @@
         published_ports:
           - "80:3000"
         env:
-          REACT_APP_API_URL: "http://{{ hostvars[inventory_hostname].ansible_facts.ec2_metadata.public_ipv4 }}:5000"
+          REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
 
     # - name: Run React container
     #   docker_container:
