@@ -1,35 +1,39 @@
-# Use an official Node.js image to build the app
-FROM node:20.9.0-alpine AS build
+# Use a lightweight Node image as the base
+FROM node:20.9.0-alpine as build
 
-# Define build-time argument
-ARG REACT_APP_API_URL
-
-# Set environment variable for build-time
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-
-# Set working directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the package.json and install dependencies
-COPY package.json /app
+# Copy package.json and package-lock.json to install dependencies
+COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
 # Copy the rest of the application code
-COPY . /app
+COPY . .
 
-# Build the app
+# Inject the REACT_APP_API_URL during build
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+
+# Build the React application
 RUN npm run build
 
-# Use a simple server to serve the built app
+# Use a separate lightweight web server image for serving the static files
 FROM nginx:alpine
+
+## Remove default nginx index pagec
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy the built static files from the previous stage to the NGINX image
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Expose port 80 for the server
+# Expose port 80 (default port for HTTP)
 EXPOSE 80
 
-# Start Nginx server
+# Start NGINX to serve the static files
 CMD ["nginx", "-g", "daemon off;"]
-
 
 # # Use node base image
 # FROM node:20.9.0-alpine
