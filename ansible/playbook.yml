@@ -30,10 +30,11 @@
         state: absent
         force_kill: yes
       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
-      ignore_errors: true
+      ignore_errors: yes
 
-    - name: Remove all unused Docker images
-      command: docker image prune -af
+    - name: Remove all Docker images
+      command: docker rmi $(docker images -q) --force
+      ignore_errors: yes
 
     - name: Pull Flask backend image
       docker_image:
@@ -88,17 +89,16 @@
 #         state: started
 #         enabled: yes
 
-#     - name: Stop and remove Flask container if it exists
+#     - name: Stop and remove all Docker containers
 #       docker_container:
-#         name: flask-app
+#         name: "{{ item }}"
 #         state: absent
 #         force_kill: yes
+#       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+#       ignore_errors: true
 
-#     - name: Stop and remove React container if it exists
-#       docker_container:
-#         name: react-app
-#         state: absent
-#         force_kill: yes
+#     - name: Remove all unused Docker images
+#       command: docker image prune -af
 
 #     - name: Pull Flask backend image
 #       docker_image:
@@ -127,43 +127,3 @@
 #         restart_policy: always
 #         published_ports:
 #           - "80:3000"
-
-#     - name: Clean up dangling Docker images
-#       command: docker image prune -f
-# ---
-# - hosts: app_server
-#   become: true
-#   tasks:
-#     - name: Install Docker
-#       dnf:
-#         name: docker
-#         state: present
-
-#     - name: Install pip
-#       dnf:
-#         name: python3-pip
-#         state: present
-
-#     - name: Install Docker SDK for Python
-#       pip:
-#         name: docker
-#         executable: pip3
-#         extra_args: --ignore-installed requests
-
-#     - name: Start Docker service
-#       service:
-#         name: docker
-#         state: started
-#         enabled: yes
-
-#     - name: Pull Flask backend image
-#       command: docker pull amihsan/flask-terraform-backend:latest
-
-#     - name: Pull React frontend image
-#       command: docker pull amihsan/react-terraform-frontend:latest
-
-#     - name: Run Flask container
-#       command: docker run -d -p 5000:5000 --name flask-app amihsan/flask-terraform-backend:latest
-
-#     - name: Run React container
-#       command: docker run -d -p 80:3000 --name react-app amihsan/react-terraform-frontend:latest
