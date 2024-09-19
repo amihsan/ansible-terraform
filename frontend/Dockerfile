@@ -3,31 +3,29 @@ FROM node:20.9.0-alpine AS build
 
 WORKDIR /app
 
-# Copy package.json and install dependencies
 COPY package*.json ./
 RUN npm install
-
-# Copy all other files and build the app
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve the React app with Nginx
+# Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Install gettext for envsubst (used for dynamic env variable injection)
-RUN apk add --no-cache gettext
-
-# Copy built React app to Nginx's static directory
+# Copy the build output
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy a custom Nginx configuration file 
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy a custom entrypoint script
+COPY ./entrypoint.sh /usr/share/nginx/entrypoint.sh
+RUN chmod +x /usr/share/nginx/entrypoint.sh
 
 # Expose port 80
 EXPOSE 80
 
-# Replace environment variables in the React app's index.html at runtime
-CMD /bin/sh -c "envsubst '\$REACT_APP_API_URL' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp && mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+# Replace default Nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Start Nginx with the entrypoint script
+CMD ["/usr/share/nginx/entrypoint.sh"]
 
 
 

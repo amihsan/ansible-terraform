@@ -86,8 +86,6 @@
           - "80:3000"
         env:
           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
-        command: >
-          /bin/sh -c "envsubst '\$REACT_APP_API_URL' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp && mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
         networks:
           - name: app-network
 

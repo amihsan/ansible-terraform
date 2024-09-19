@@ -6,8 +6,9 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("API URL:", process.env.REACT_APP_API_URL); // Debug log
-    fetch(`${process.env.REACT_APP_API_URL}/`)
+    const apiUrl = window.REACT_APP_API_URL;
+    console.log("API URL:", apiUrl); // For debugging
+    fetch(`${apiUrl}/`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
