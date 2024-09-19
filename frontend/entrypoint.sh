@@ -1,8 +1,11 @@
 #!/bin/sh
 
-# Replace placeholders with environment variable values
-envsubst '${REACT_APP_API_URL}' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp
-mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html
+# Generate the env-config.js file
+cat <<EOF > /usr/share/nginx/html/env-config.js
+window._env_ = {
+  REACT_APP_API_URL: "${REACT_APP_API_URL}"
+};
+EOF
 
 # Start Nginx
-nginx -g 'daemon off;'
+exec nginx -g 'daemon off;'

@@ -1,31 +1,32 @@
-# Stage 1: Build the React app
-FROM node:20.9.0-alpine AS build
+# Use the official Node.js image to build the React app
+FROM node:20.9.0-alpine as build
 
+# Set working directory
 WORKDIR /app
 
-COPY package*.json ./
+# Install dependencies
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm install
-COPY . .
+
+# Copy and build the React app
+COPY . ./
 RUN npm run build
 
-# Stage 2: Serve with Nginx
+# Use Nginx to serve the built React app
 FROM nginx:alpine
 
-# Copy the build output
+# Copy the build output to Nginx's default public directory
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy a custom entrypoint script
-COPY ./entrypoint.sh /usr/share/nginx/entrypoint.sh
-RUN chmod +x /usr/share/nginx/entrypoint.sh
-
-# Expose port 80
-EXPOSE 80
-
-# Replace default Nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Start Nginx with the entrypoint script
-CMD ["/usr/share/nginx/entrypoint.sh"]
+# Copy the entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
 
 
