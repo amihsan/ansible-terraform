@@ -39,28 +39,10 @@ function App() {
   return (
     <div>
       <h1>{message}</h1>
-      <h2>Ansible</h2>
+      <h2>Ansible vs Terraform</h2>
       <h2>Terraform</h2>
     </div>
   );
 }
 
 export default App;
-
-// import React from "react";
-
-// // Access the API URL from environment variables
-// const apiUrl = window._env_.REACT_APP_API_URL;
-
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <h1>Hello Ansible & Terraform</h1>
-//         <p>API URL: {apiUrl}</p>
-//       </header>
-//     </div>
-//   );
-// }
-
-// export default App;
