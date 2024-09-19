@@ -36,33 +36,34 @@
         tag: latest
         source: pull
 
-    - name: Run Flask container
-      docker_container:
-        name: flask-app
-        image: amihsan/flask-terraform-backend:latest
-        ports:
-          - "5000:5000"
-        networks:
-          - app-network
-        state: started
-
     - name: Pull React Docker image
       docker_image:
         name: amihsan/react-terraform-frontend
         tag: latest
         source: pull
 
+    - name: Run Flask container
+      docker_container:
+        name: flask-app
+        image: amihsan/flask-terraform-backend:latest
+        published_ports:
+          - "5000:5000"
+        networks:
+          - app-network
+        state: started
+
     - name: Run React container
       docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
-        ports:
+        published_ports:
           - "80:80"
         environment:
           REACT_APP_API_URL: "http://localhost:5000"
         networks:
           - app-network
         state: started
+
 
 # - hosts: app_server
 #   become: true
