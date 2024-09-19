@@ -1,4 +1,3 @@
----
 - hosts: app_server
   become: true
   tasks:
@@ -38,18 +37,12 @@
         name: app-network
         state: present
 
-    # Gather the list of containers, so you don't rely on lookup
-    - name: Gather all Docker container IDs
-      command: docker ps -a -q
-      register: container_ids
-
     - name: Stop and remove all Docker containers
       docker_container:
         name: "{{ item }}"
         state: absent
         force_kill: yes
-      loop: "{{ container_ids.stdout_lines }}"
-      when: container_ids.stdout != ""
+      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -83,15 +76,25 @@
         state: started
         restart_policy: always
         published_ports:
-          - "80:3000"
+          - "80:80"
         env:
           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
-        command: >
-          /bin/sh -c "envsubst '\$REACT_APP_API_URL' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp && mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
         networks:
           - name: app-network
 
-    # You can also install curl during container run
+    - name: Copy Nginx configuration file to the control machine
+      copy:
+        src: nginx.conf
+        dest: /tmp/nginx.conf
+      delegate_to: localhost
+
+    - name: Copy Nginx configuration file into the Docker container
+      command: docker cp /tmp/nginx.conf react-app:/etc/nginx/nginx.conf
+      delegate_to: localhost
+
+    - name: Reload Nginx configuration
+      command: docker exec react-app nginx -s reload
+
     - name: Install curl in React container
       command: >
         docker exec react-app /bin/sh -c "apk add --no-cache curl"
@@ -104,10 +107,6 @@
       command: >
         docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://{{ ansible_ec2_public_ipv4 }}:5000"
       register: flask_status
-
-    - name: Debug Flask endpoint status
-      debug:
-        msg: "Flask endpoint status code: {{ flask_status.stdout }}"
 # - hosts: app_server
 #   become: true
 #   tasks:
