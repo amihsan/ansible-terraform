@@ -77,7 +77,7 @@
         restart_policy: always
         published_ports:
           - "80:3000"
-        environment:
+        env:
           - REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
         networks:
           - name: app-network
