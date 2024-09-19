@@ -85,10 +85,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible
 
+      - name: Create Inventory File
+        run: |
+          echo "[ec2_instances]" > inventory.ini
+          echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem" >> inventory.ini  # Update with your EC2 IP
+
       - name: Run Ansible Playbook
         env:
           PRIVATE_KEY: ${{ secrets.ANSIBLE_PRIVATE_KEY }} # Your EC2 private key stored in GitHub Secrets
         run: |
           echo "${PRIVATE_KEY}" > private_key.pem
           chmod 600 private_key.pem
-          ansible-playbook -i "${{ steps.tf_output.outputs.PUBLIC_IP }}," ansible/playbook.yml --private-key private_key.pem --user ec2-user  # Update with your EC2 IP and user
+          ansible-playbook -i inventory.ini ansible/playbook.yml --private-key private_key.pem
