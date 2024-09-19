@@ -1,12 +1,25 @@
 ---
-- name: Deploy Flask and React applications on EC2
-  hosts: app_server
+- hosts: app_server
   become: true
   tasks:
+    - name: Gather EC2 instance metadata
+      ec2_metadata_facts:
+
     - name: Install Docker
-      yum:
+      dnf:
         name: docker
         state: present
+
+    - name: Install pip
+      dnf:
+        name: python3-pip
+        state: present
+
+    - name: Install Docker SDK for Python
+      pip:
+        name: docker
+        executable: pip3
+        extra_args: --ignore-installed requests
 
     - name: Start Docker service
       service:
@@ -14,32 +27,42 @@
         state: started
         enabled: yes
 
+    - name: Ensure ec2-user is in the docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    - name: Ensure Docker network exists
+      docker_network:
+        name: app-network
+        state: present
+
+    # Gather the list of containers, so you don't rely on lookup
+    - name: Gather all Docker container IDs
+      command: docker ps -a -q
+      register: container_ids
+
     - name: Stop and remove all Docker containers
       docker_container:
         name: "{{ item }}"
         state: absent
         force_kill: yes
-      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+      loop: "{{ container_ids.stdout_lines }}"
+      when: container_ids.stdout != ""
       ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
 
-    - name: Create app network
-      docker_network:
-        name: app-network
-        state: present
-
-    - name: Pull Flask Docker image
+    - name: Pull Flask backend image
       docker_image:
-        name: amihsan/flask-terraform-backend
-        tag: latest
+        name: amihsan/flask-terraform-backend:latest
         source: pull
 
-    - name: Pull React Docker image
+    - name: Pull React frontend image
       docker_image:
-        name: amihsan/react-terraform-frontend
-        tag: latest
+        name: amihsan/react-terraform-frontend:latest
         source: pull
 
     - name: Run Flask container
@@ -63,8 +86,6 @@
         networks:
           - app-network
         state: started
-
-
 # - hosts: app_server
 #   become: true
 #   tasks:
