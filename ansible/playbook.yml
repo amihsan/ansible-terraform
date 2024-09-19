@@ -83,20 +83,16 @@
           - name: app-network
 
     - name: Install curl in React container
-      docker_container_exec:
-        name: react-app
-        command: apk add --no-cache curl
-        stdin: true
+      command: >
+        docker exec react-app /bin/sh -c "apk add --no-cache curl"
 
     - name: Debug public IP
       debug:
         msg: "Public IP: {{ ansible_ec2_public_ipv4 }}"
 
     - name: Check Flask endpoint from React container
-      docker_container_exec:
-        name: react-app
-        command: >
-          curl -s -o /dev/null -w "%{http_code}" http://flask-app:5000
+      command: >
+        docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://flask-app:5000"
       register: flask_status
 
     - name: Debug Flask endpoint status
