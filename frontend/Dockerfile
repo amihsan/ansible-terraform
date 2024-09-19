@@ -1,9 +1,6 @@
 # Use node base image
 FROM node:20.9.0-alpine
 
-# # Install curl
-# RUN apk update && apk add curl
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -15,10 +12,6 @@ RUN npm install
 
 # Copy the rest of the application
 COPY . .
-
-# # Inject the REACT_APP_API_URL during build
-# ARG REACT_APP_API_URL
-# ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
 # Build the React app for production
 RUN npm run build
