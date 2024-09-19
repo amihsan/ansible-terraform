@@ -39,18 +39,17 @@
         state: present
 
     # Gather the list of containers, so you don't rely on lookup
-    - name: Gather all Docker containers
-      docker_container_info:
-        gather_facts: true
-      register: docker_containers
+    - name: Gather all Docker container IDs
+      command: docker ps -a -q
+      register: container_ids
 
     - name: Stop and remove all Docker containers
       docker_container:
-        name: "{{ item.Name }}"
+        name: "{{ item }}"
         state: absent
         force_kill: yes
-      loop: "{{ docker_containers.containers }}"
-      when: docker_containers.containers is defined and docker_containers.containers | length > 0
+      loop: "{{ container_ids.stdout_lines }}"
+      when: container_ids.stdout != ""
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -109,7 +108,6 @@
     - name: Debug Flask endpoint status
       debug:
         msg: "Flask endpoint status code: {{ flask_status.stdout }}"
-
 # - hosts: app_server
 #   become: true
 #   tasks:
