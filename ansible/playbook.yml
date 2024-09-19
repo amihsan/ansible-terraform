@@ -9,17 +9,6 @@
         name: docker
         state: present
 
-    - name: Install pip
-      dnf:
-        name: python3-pip
-        state: present
-
-    - name: Install Docker SDK for Python
-      pip:
-        name: docker
-        executable: pip3
-        extra_args: --ignore-installed requests
-
     - name: Start Docker service
       service:
         name: docker
@@ -82,15 +71,19 @@
         networks:
           - name: app-network
 
-    - name: Copy Nginx configuration file to the control machine
+    - name: Wait for React container to be available
+      wait_for:
+        port: 80
+        host: localhost
+        delay: 10
+
+    - name: Copy Nginx configuration file to the EC2 instance
       copy:
         src: nginx.conf
         dest: /tmp/nginx.conf
-      delegate_to: localhost
 
     - name: Copy Nginx configuration file into the Docker container
       command: docker cp /tmp/nginx.conf react-app:/etc/nginx/nginx.conf
-      delegate_to: localhost
 
     - name: Reload Nginx configuration
       command: docker exec react-app nginx -s reload
@@ -107,6 +100,10 @@
       command: >
         docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://{{ ansible_ec2_public_ipv4 }}:5000"
       register: flask_status
+
+    - name: Debug Flask endpoint status
+      debug:
+        msg: "Flask endpoint status code: {{ flask_status.stdout }}"
 # - hosts: app_server
 #   become: true
 #   tasks:
