@@ -1,25 +1,12 @@
 ---
-- hosts: app_server
+- name: Deploy Flask and React applications on EC2
+  hosts: app_server
   become: true
   tasks:
-    - name: Gather EC2 instance metadata
-      ec2_metadata_facts:
-
     - name: Install Docker
-      dnf:
+      yum:
         name: docker
         state: present
-
-    - name: Install pip
-      dnf:
-        name: python3-pip
-        state: present
-
-    - name: Install Docker SDK for Python
-      pip:
-        name: docker
-        executable: pip3
-        extra_args: --ignore-installed requests
 
     - name: Start Docker service
       service:
@@ -27,85 +14,56 @@
         state: started
         enabled: yes
 
-    - name: Ensure ec2-user is in the docker group
-      user:
-        name: ec2-user
-        groups: docker
-        append: yes
-
-    - name: Ensure Docker network exists
-      docker_network:
-        name: app-network
-        state: present
-
-    # Gather the list of containers, so you don't rely on lookup
-    - name: Gather all Docker container IDs
-      command: docker ps -a -q
-      register: container_ids
-
     - name: Stop and remove all Docker containers
       docker_container:
         name: "{{ item }}"
         state: absent
         force_kill: yes
-      loop: "{{ container_ids.stdout_lines }}"
-      when: container_ids.stdout != ""
+      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
       ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
 
-    - name: Pull Flask backend image
-      docker_image:
-        name: amihsan/flask-terraform-backend:latest
-        source: pull
+    - name: Create app network
+      docker_network:
+        name: app-network
+        state: present
 
-    - name: Pull React frontend image
+    - name: Pull Flask Docker image
       docker_image:
-        name: amihsan/react-terraform-frontend:latest
+        name: amihsan/flask-terraform-backend
+        tag: latest
         source: pull
 
     - name: Run Flask container
       docker_container:
         name: flask-app
         image: amihsan/flask-terraform-backend:latest
-        state: started
-        restart_policy: always
-        published_ports:
+        ports:
           - "5000:5000"
         networks:
-          - name: app-network
+          - app-network
+        state: started
 
-    - name: Run React container with public IP as environment variable
+    - name: Pull React Docker image
+      docker_image:
+        name: amihsan/react-terraform-frontend
+        tag: latest
+        source: pull
+
+    - name: Run React container
       docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
-        state: started
-        restart_policy: always
-        published_ports:
-          - "80:3000"
-        env:
-          REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
+        ports:
+          - "80:80"
+        environment:
+          REACT_APP_API_URL: "http://localhost:5000"
         networks:
-          - name: app-network
+          - app-network
+        state: started
 
-    # You can also install curl during container run
-    - name: Install curl in React container
-      command: >
-        docker exec react-app /bin/sh -c "apk add --no-cache curl"
-
-    - name: Debug public IP
-      debug:
-        msg: "Public IP: {{ ansible_ec2_public_ipv4 }}"
-
-    - name: Check Flask endpoint from React container
-      command: >
-        docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://{{ ansible_ec2_public_ipv4 }}:5000"
-      register: flask_status
-
-    - name: Debug Flask endpoint status
-      debug:
-        msg: "Flask endpoint status code: {{ flask_status.stdout }}"
 # - hosts: app_server
 #   become: true
 #   tasks:
