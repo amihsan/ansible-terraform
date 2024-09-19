@@ -1,27 +1,20 @@
 ---
-- hosts: app_server
+- hosts: ec2_instances
   become: true
   tasks:
-    - name: Gather EC2 instance metadata
-      ec2_metadata_facts:
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_version
+      ignore_errors: true
 
-    - name: Install Docker
-      dnf:
-        name: docker
+    - name: Install Docker if not already installed
+      apt:
+        name: docker.io
         state: present
+        update_cache: yes
+      when: docker_version.failed
 
-    - name: Install pip
-      dnf:
-        name: python3-pip
-        state: present
-
-    - name: Install Docker SDK for Python
-      pip:
-        name: docker
-        executable: pip3
-        extra_args: --ignore-installed requests
-
-    - name: Start Docker service
+    - name: Ensure Docker service is running
       service:
         name: docker
         state: started
@@ -48,22 +41,172 @@
         name: amihsan/react-terraform-frontend:latest
         source: pull
 
-    - name: Run Flask container
+    - name: Create a custom Docker network
+      docker_network:
+        name: app-network
+        driver: bridge
+
+    - name: Run Flask backend container
       docker_container:
         name: flask-app
         image: amihsan/flask-terraform-backend:latest
         state: started
         restart_policy: always
+        networks:
+          - name: app-network
         published_ports:
           - "5000:5000"
 
-    - name: Run React container with public IP as environment variable
+    - name: Run React frontend container
       docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
         state: started
         restart_policy: always
+        networks:
+          - name: app-network
         published_ports:
           - "80:80"
         env:
           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
+# ---
+# - hosts: localhost
+#   connection: local
+#   become: true
+#   tasks:
+#     - name: Check if Docker is installed
+#       command: docker --version
+#       register: docker_version
+#       ignore_errors: true
+
+#     - name: Install Docker if not already installed
+#       apt:
+#         name: docker.io
+#         state: present
+#         update_cache: yes
+#       when: docker_version.failed
+
+#     - name: Ensure Docker service is running
+#       service:
+#         name: docker
+#         state: started
+#         enabled: yes
+
+#     - name: Stop and remove all Docker containers
+#       docker_container:
+#         name: "{{ item }}"
+#         state: absent
+#         force_kill: yes
+#       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+#       ignore_errors: true
+
+#     - name: Remove all unused Docker images
+#       command: docker image prune -af
+
+#     - name: Pull Flask backend image
+#       docker_image:
+#         name: amihsan/flask-terraform-backend:latest
+#         source: pull
+
+#     - name: Pull React frontend image
+#       docker_image:
+#         name: amihsan/react-terraform-frontend:latest
+#         source: pull
+
+#     - name: Create a custom Docker network
+#       docker_network:
+#         name: app-network
+#         driver: bridge
+
+#     - name: Run Flask backend container
+#       docker_container:
+#         name: flask-app
+#         image: amihsan/flask-terraform-backend:latest
+#         state: started
+#         restart_policy: always
+#         networks:
+#           - name: app-network
+#         published_ports:
+#           - "5000:5000"
+
+#     - name: Run React frontend container
+#       docker_container:
+#         name: react-app
+#         image: amihsan/react-terraform-frontend:latest
+#         state: started
+#         restart_policy: always
+#         networks:
+#           - name: app-network
+#         published_ports:
+#           - "80:80"
+#         env:
+#           REACT_APP_API_URL: "http://localhost:5000"
+# ---
+# - hosts: app_server
+#   become: true
+#   tasks:
+#     - name: Gather EC2 instance metadata
+#       ec2_metadata_facts:
+
+#     - name: Install Docker
+#       dnf:
+#         name: docker
+#         state: present
+
+#     - name: Install pip
+#       dnf:
+#         name: python3-pip
+#         state: present
+
+#     - name: Install Docker SDK for Python
+#       pip:
+#         name: docker
+#         executable: pip3
+#         extra_args: --ignore-installed requests
+
+#     - name: Start Docker service
+#       service:
+#         name: docker
+#         state: started
+#         enabled: yes
+
+#     - name: Stop and remove all Docker containers
+#       docker_container:
+#         name: "{{ item }}"
+#         state: absent
+#         force_kill: yes
+#       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+#       ignore_errors: true
+
+#     - name: Remove all unused Docker images
+#       command: docker image prune -af
+
+#     - name: Pull Flask backend image
+#       docker_image:
+#         name: amihsan/flask-terraform-backend:latest
+#         source: pull
+
+#     - name: Pull React frontend image
+#       docker_image:
+#         name: amihsan/react-terraform-frontend:latest
+#         source: pull
+
+#     - name: Run Flask container
+#       docker_container:
+#         name: flask-app
+#         image: amihsan/flask-terraform-backend:latest
+#         state: started
+#         restart_policy: always
+#         published_ports:
+#           - "5000:5000"
+
+#     - name: Run React container with public IP as environment variable
+#       docker_container:
+#         name: react-app
+#         image: amihsan/react-terraform-frontend:latest
+#         state: started
+#         restart_policy: always
+#         published_ports:
+#           - "80:80"
+#         env:
+#           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
