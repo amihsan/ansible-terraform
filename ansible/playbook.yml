@@ -1,5 +1,5 @@
 ---
-- hosts: ec2_instances
+- hosts: app_server
   become: true
   tasks:
     - name: Check if Docker is installed
@@ -69,6 +69,7 @@
           - "80:80"
         env:
           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
+##########################
 # ---
 # - hosts: localhost
 #   connection: local
@@ -141,6 +142,8 @@
 #           - "80:80"
 #         env:
 #           REACT_APP_API_URL: "http://localhost:5000"
+
+#######################
 # ---
 # - hosts: app_server
 #   become: true

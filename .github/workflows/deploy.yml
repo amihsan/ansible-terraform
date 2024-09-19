@@ -59,41 +59,41 @@ jobs:
           PUBLIC_IP=$(terraform output -raw public_ip)
           echo "::set-output name=PUBLIC_IP::$PUBLIC_IP"
 
-      # # Step 8: Update Ansible inventory with the EC2 public IP
-      # - name: Update Ansible Inventory
-      #   run: |
-      #     echo "[app_server]" > ansible/hosts
-      #     echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
-
-      # # Step 9: Create .ssh directory and SSH private key file
-      # - name: Create .ssh directory and SSH key file
-      #   run: |
-      #     mkdir -p /home/runner/.ssh
-      #     echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
-      #     chmod 600 /home/runner/.ssh/id_rsa
-
-      # # Step 10: Run the Ansible playbook to configure the EC2 instance
-      # - name: Run Ansible Playbook
-      #   run: |
-      #     ansible-playbook -i ansible/hosts ansible/playbook.yml
-      #   env:
-      #     ANSIBLE_HOST_KEY_CHECKING: "false"
-      #     ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
-
-      - name: Install Ansible
+      # Step 8: Update Ansible inventory with the EC2 public IP
+      - name: Update Ansible Inventory
         run: |
-          python -m pip install --upgrade pip
-          pip install ansible
+          echo "[app_server]" > ansible/hosts
+          echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
 
-      - name: Create Inventory File
+      # Step 9: Create .ssh directory and SSH private key file
+      - name: Create .ssh directory and SSH key file
         run: |
-          echo "[ec2_instances]" > inventory.ini
-          echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem" >> inventory.ini  # Update with your EC2 IP
+          mkdir -p /home/runner/.ssh
+          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
+          chmod 600 /home/runner/.ssh/id_rsa
 
+      # Step 10: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
-        env:
-          PRIVATE_KEY: ${{ secrets.ANSIBLE_PRIVATE_KEY }} # Your EC2 private key stored in GitHub Secrets
         run: |
-          echo "${PRIVATE_KEY}" > private_key.pem
-          chmod 600 private_key.pem
-          ansible-playbook -i inventory.ini ansible/playbook.yml --private-key private_key.pem
+          ansible-playbook -i ansible/hosts ansible/playbook.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+          ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
+
+      # - name: Install Ansible
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install ansible
+
+      # - name: Create Inventory File
+      #   run: |
+      #     echo "[ec2_instances]" > inventory.ini
+      #     echo "${{ steps.tf_output.outputs.PUBLIC_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=private_key.pem" >> inventory.ini  # Update with your EC2 IP
+
+      # - name: Run Ansible Playbook
+      #   env:
+      #     PRIVATE_KEY: ${{ secrets.ANSIBLE_PRIVATE_KEY }} # Your EC2 private key stored in GitHub Secrets
+      #   run: |
+      #     echo "${PRIVATE_KEY}" > private_key.pem
+      #     chmod 600 private_key.pem
+      #     ansible-playbook -i inventory.ini ansible/playbook.yml --private-key private_key.pem
