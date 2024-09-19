@@ -91,4 +91,4 @@ jobs:
         run: |
           echo "${PRIVATE_KEY}" > private_key.pem
           chmod 600 private_key.pem
-          ansible-playbook -i "${{ steps.tf_output.outputs.PUBLIC_IP }}," playbook.yml --private-key private_key.pem --user ec2-user  # Update with your EC2 IP and user
+          ansible-playbook -i "${{ steps.tf_output.outputs.PUBLIC_IP }}," ansible/playbook.yml --private-key private_key.pem --user ec2-user  # Update with your EC2 IP and user
