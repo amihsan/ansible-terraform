@@ -20,6 +20,9 @@ RUN apk add --no-cache gettext
 # Copy built React app to Nginx's static directory
 COPY --from=build /app/build /usr/share/nginx/html
 
+# Copy a custom Nginx configuration file 
+COPY nginx.conf /etc/nginx/nginx.conf
+
 # Expose port 80
 EXPOSE 80
 

@@ -1,3 +1,4 @@
+---
 - hosts: app_server
   become: true
   tasks:
@@ -8,6 +9,17 @@
       dnf:
         name: docker
         state: present
+
+    - name: Install pip
+      dnf:
+        name: python3-pip
+        state: present
+
+    - name: Install Docker SDK for Python
+      pip:
+        name: docker
+        executable: pip3
+        extra_args: --ignore-installed requests
 
     - name: Start Docker service
       service:
@@ -26,12 +38,18 @@
         name: app-network
         state: present
 
+    # Gather the list of containers, so you don't rely on lookup
+    - name: Gather all Docker container IDs
+      command: docker ps -a -q
+      register: container_ids
+
     - name: Stop and remove all Docker containers
       docker_container:
         name: "{{ item }}"
         state: absent
         force_kill: yes
-      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+      loop: "{{ container_ids.stdout_lines }}"
+      when: container_ids.stdout != ""
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -65,29 +83,15 @@
         state: started
         restart_policy: always
         published_ports:
-          - "80:80"
+          - "80:3000"
         env:
           REACT_APP_API_URL: "http://{{ ansible_ec2_public_ipv4 }}:5000"
+        command: >
+          /bin/sh -c "envsubst '\$REACT_APP_API_URL' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp && mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
         networks:
           - name: app-network
 
-    - name: Wait for React container to be available
-      wait_for:
-        port: 80
-        host: localhost
-        delay: 10
-
-    - name: Copy Nginx configuration file to the EC2 instance
-      copy:
-        src: nginx.conf
-        dest: /tmp/nginx.conf
-
-    - name: Copy Nginx configuration file into the Docker container
-      command: docker cp /tmp/nginx.conf react-app:/etc/nginx/nginx.conf
-
-    - name: Reload Nginx configuration
-      command: docker exec react-app nginx -s reload
-
+    # You can also install curl during container run
     - name: Install curl in React container
       command: >
         docker exec react-app /bin/sh -c "apk add --no-cache curl"
