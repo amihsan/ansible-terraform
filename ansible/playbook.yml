@@ -27,6 +27,12 @@
         state: started
         enabled: yes
 
+    - name: Ensure ec2-user is in the docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
     - name: Ensure Docker network exists
       docker_network:
         name: app-network
