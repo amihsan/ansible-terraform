@@ -1,29 +1,61 @@
-# Use node base image
-FROM node:20.9.0-alpine
+# Stage 1: Build the React app
+FROM node:20.9.0-alpine AS build
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the package.json and package-lock.json first for better build caching
+# Copy package.json and install dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application
+# Copy all other files and build the app
 COPY . .
-
-# Build the React app for production
 RUN npm run build
 
-# Serve the app with a lightweight web server
-RUN npm install -g serve
+# Stage 2: Serve the React app with Nginx
+FROM nginx:alpine
 
-# Expose port 3000
-EXPOSE 3000
+# Install gettext for envsubst (used for dynamic env variable injection)
+RUN apk add --no-cache gettext
 
-# Serve the app
-CMD ["serve", "-s", "build"]
+# Copy built React app to Nginx's static directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Replace environment variables in the React app's index.html at runtime
+CMD /bin/sh -c "envsubst '\$REACT_APP_API_URL' < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp && mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+
+
+
+#################
+
+# # Use node base image
+# FROM node:20.9.0-alpine
+
+# # Set the working directory in the container
+# WORKDIR /app
+
+# # Copy the package.json and package-lock.json first for better build caching
+# COPY package*.json ./
+
+# # Install dependencies
+# RUN npm install
+
+# # Copy the rest of the application
+# COPY . .
+
+# # Build the React app for production
+# RUN npm run build
+
+# # Serve the app with a lightweight web server
+# RUN npm install -g serve
+
+# # Expose port 3000
+# EXPOSE 3000
+
+# # Serve the app
+# CMD ["serve", "-s", "build"]
 
 
 
