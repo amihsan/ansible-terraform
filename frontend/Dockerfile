@@ -2,7 +2,7 @@
 FROM node:20.9.0-alpine
 
 # Install curl
-RUN apt-get update && apt-get install -y curl
+RUN apk update && apk add curl
 
 # Set the working directory in the container
 WORKDIR /app
@@ -31,6 +31,7 @@ EXPOSE 3000
 
 # Serve the app
 CMD ["serve", "-s", "build"]
+
 
 
 
