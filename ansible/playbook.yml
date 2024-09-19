@@ -1,3 +1,4 @@
+---
 - hosts: app_server
   become: true
   tasks:
@@ -37,12 +38,19 @@
         name: app-network
         state: present
 
+    # Gather the list of containers, so you don't rely on lookup
+    - name: Gather all Docker containers
+      docker_container_info:
+        gather_facts: true
+      register: docker_containers
+
     - name: Stop and remove all Docker containers
       docker_container:
-        name: "{{ item }}"
+        name: "{{ item.Name }}"
         state: absent
         force_kill: yes
-      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+      loop: "{{ docker_containers.containers }}"
+      when: docker_containers.containers is defined and docker_containers.containers | length > 0
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -84,6 +92,7 @@
         networks:
           - name: app-network
 
+    # You can also install curl during container run
     - name: Install curl in React container
       command: >
         docker exec react-app /bin/sh -c "apk add --no-cache curl"
@@ -94,12 +103,13 @@
 
     - name: Check Flask endpoint from React container
       command: >
-        docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://flask-app:5000"
+        docker exec react-app /bin/sh -c "curl -s -o /dev/null -w \"%{http_code}\" http://{{ ansible_ec2_public_ipv4 }}:5000"
       register: flask_status
 
     - name: Debug Flask endpoint status
       debug:
         msg: "Flask endpoint status code: {{ flask_status.stdout }}"
+
 # - hosts: app_server
 #   become: true
 #   tasks:
