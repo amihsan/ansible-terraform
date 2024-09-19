@@ -33,12 +33,12 @@
         append: yes
 
     - name: Ensure Docker network exists
-      community.docker.docker_network:
+      docker_network:
         name: app-network
         state: present
 
     - name: Stop and remove all Docker containers
-      community.docker.docker_container:
+      docker_container:
         name: "{{ item }}"
         state: absent
         force_kill: yes
@@ -49,17 +49,17 @@
       command: docker image prune -af
 
     - name: Pull Flask backend image
-      community.docker.docker_image:
+      docker_image:
         name: amihsan/flask-terraform-backend:latest
         source: pull
 
     - name: Pull React frontend image
-      community.docker.docker_image:
+      docker_image:
         name: amihsan/react-terraform-frontend:latest
         source: pull
 
     - name: Run Flask container
-      community.docker.docker_container:
+      docker_container:
         name: flask-app
         image: amihsan/flask-terraform-backend:latest
         state: started
@@ -70,7 +70,7 @@
           - name: app-network
 
     - name: Run React container with public IP as environment variable
-      community.docker.docker_container:
+      docker_container:
         name: react-app
         image: amihsan/react-terraform-frontend:latest
         state: started
@@ -82,13 +82,21 @@
         networks:
           - name: app-network
 
+    - name: Install curl in React container
+      docker_container_exec:
+        name: react-app
+        command: apk add --no-cache curl
+        stdin: true
+
     - name: Debug public IP
       debug:
         msg: "Public IP: {{ ansible_ec2_public_ipv4 }}"
 
     - name: Check Flask endpoint from React container
-      command: >
-        docker exec react-app /bin/sh -c 'curl -s -o /dev/null -w "%{http_code}" http://flask-app:5000'
+      docker_container_exec:
+        name: react-app
+        command: >
+          curl -s -o /dev/null -w "%{http_code}" http://flask-app:5000
       register: flask_status
 
     - name: Debug Flask endpoint status
