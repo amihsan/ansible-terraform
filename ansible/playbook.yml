@@ -38,9 +38,15 @@
       command: docker image prune -af
 
     - name: Remove all Docker images
-      shell: docker rmi -f $(docker images -q)
+      shell: |
+        images=$(docker images -q)
+        if [ -n "$images" ]; then
+          docker rmi -f $images
+        else
+          echo "No images to remove"
+        fi
       register: remove_images
-      changed_when: remove_images.stdout != ""
+      changed_when: "'No images to remove' not in remove_images.stdout"
 
     - name: Pull Flask backend image
       docker_image:
