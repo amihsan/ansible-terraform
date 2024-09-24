@@ -6,7 +6,9 @@
 This is the main repository of the TRAVOS app which includes both the frontend and backend logic of the application.
 
 ## View Demo
-https://react-travos-app.vercel.app/
+https://18.198.79.61
+
+http://ec2-18-198-79-61.eu-central-1.compute.amazonaws.com/
 
 ### 🧱 Built With
 
