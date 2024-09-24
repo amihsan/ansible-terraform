@@ -1,0 +1,12 @@
+// Define your teal color variable
+$teal: #008080;
+
+
+// Use the teal color in Bootstrap's theme-colors
+$theme-colors: (
+        'primary': $teal,
+);
+
+
+// Import Bootstrap SCSS
+@import '../node_modules/bootstrap/scss/bootstrap';

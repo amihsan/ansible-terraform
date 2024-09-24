@@ -1,0 +1,17 @@
+.footer {
+    background-color: #008080; /* Dark Teal color */
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: large;
+
+}
+
+
+@media (max-width: 768px) {
+
+    .footer p {
+        font-size: 0.8rem;
+    }
+}
