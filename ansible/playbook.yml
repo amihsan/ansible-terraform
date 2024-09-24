@@ -58,6 +58,10 @@
         name: app-network
         driver: bridge
 
+    - name: Debug MONGODB_URI
+      debug:
+        var: MONGODB_URI
+
     - name: Run Flask backend container
       docker_container:
         name: flask-app
