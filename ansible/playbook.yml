@@ -2,6 +2,8 @@
 ---
 - hosts: app_server
   become: true
+  vars_files:
+    - secrets.yml
   tasks:
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
@@ -26,11 +28,17 @@
 
     - name: Stop and remove all Docker containers
       docker_container:
-        name: "{{ item }}"
+        name: all
         state: absent
         force_kill: yes
-      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
-      ignore_errors: true
+
+    # - name: Stop and remove all Docker containers
+    #   docker_container:
+    #     name: "{{ item }}"
+    #     state: absent
+    #     force_kill: yes
+    #   loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+    #   ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
@@ -60,6 +68,9 @@
           - name: app-network
         published_ports:
           - "5000:5000"
+        env:
+          MONGODB_URI: "{{ MONGODB_URI }}"
+          DATABASE_NAME: "{{ DATABASE_NAME }}"
 
     - name: Run React frontend container
       docker_container:
