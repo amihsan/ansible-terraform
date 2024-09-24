@@ -37,6 +37,11 @@
     - name: Remove all unused Docker images
       command: docker image prune -af
 
+    - name: Remove all Docker images
+      command: docker rmi -f $(docker images -q)
+      register: remove_images
+      changed_when: remove_images.stdout != ""
+
     - name: Pull Flask backend image
       docker_image:
         name: amihsan/flask-terraform-backend:latest
@@ -46,6 +51,14 @@
       docker_image:
         name: amihsan/react-terraform-frontend:latest
         source: pull
+
+    - name: List all Docker images
+      command: docker images
+      register: docker_images_list
+
+    - name: Show remaining Docker images
+      debug:
+        var: docker_images_list.stdout_lines
 
     - name: Create a custom Docker network
       docker_network:
