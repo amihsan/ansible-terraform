@@ -28,17 +28,11 @@
 
     - name: Stop and remove all Docker containers
       docker_container:
-        name: all
+        name: "{{ item }}"
         state: absent
         force_kill: yes
-
-    # - name: Stop and remove all Docker containers
-    #   docker_container:
-    #     name: "{{ item }}"
-    #     state: absent
-    #     force_kill: yes
-    #   loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
-    #   ignore_errors: true
+      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+      ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
