@@ -38,7 +38,7 @@
       command: docker image prune -af
 
     - name: Remove all Docker images
-      command: docker rmi -f $(docker images -q)
+      shell: docker rmi -f $(docker images -q)
       register: remove_images
       changed_when: remove_images.stdout != ""
 
