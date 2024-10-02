@@ -45,61 +45,70 @@
       register: remove_images
       changed_when: "'No images to remove' not in remove_images.stdout"
 
-    - name: Download kubelet, kubectl, and kubeadm binaries
-      shell: |
-        KUBE_VERSION={{ lookup('pipe', 'curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt') }}
-        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/{{ item }}"
-        chmod +x {{ item }}
-        mv {{ item }} /usr/local/bin/
-      loop:
-        - kubelet
-        - kubectl
-        - kubeadm
+    - name: Update system packages
+      yum:
+        name: "*"
+        state: latest
 
-    - name: Create kubelet systemd service file
-      copy:
-        dest: /etc/systemd/system/kubelet.service
-        content: |
-          [Unit]
-          Description=kubelet: The Kubernetes Node Agent
-          Documentation=https://kubernetes.io/docs/concepts/overview/working-with-objects/kubelet/
-          After=network.target
+    - name: Install required packages for Kubernetes
+      package:
+        name:
+          - conntrack
+          - socat
+          - iproute2  # includes 'tc'
+        state: present
 
-          [Service]
-          ExecStart=/usr/local/bin/kubelet
-          Restart=always
-          RestartSec=10
-          LimitNOFILE=1048576
-          LimitNPROC=4096
+    - name: Disable swap
+      command: swapoff -a
+      ignore_errors: yes
 
-          [Install]
-          WantedBy=multi-user.target
+    - name: Install Docker
+      amazon_linux_extra:
+        name: docker
+        state: present
+
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add Kubernetes YUM repository
+      yum_repository:
+        name: kubernetes
+        description: Kubernetes Repo
+        baseurl: https://packages.cloud.google.com/yum/doc/yum-key.gpg
+        gpgcheck: yes
+        enabled: yes
+
+    - name: Install kubelet, kubectl, and kubeadm
+      yum:
+        name:
+          - kubelet
+          - kubectl
+          - kubeadm
+        state: present
 
     - name: Enable and start kubelet
-      systemd:
+      service:
         name: kubelet
         state: started
         enabled: yes
 
     - name: Initialize Kubernetes control-plane
-      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
       register: kubeadm_init
-      ignore_errors: true
+      failed_when: kubeadm_init.rc != 0
 
-    - name: Debug Kubernetes initialization result
-      debug:
-        var: kubeadm_init
-
-    - name: Configure kubectl for root
-      shell: |
-        mkdir -p $HOME/.kube
-        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    - name: Set up kubeconfig for root
+      command: >
+        mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config && 
         chown $(id -u):$(id -g) $HOME/.kube/config
-      when: kubeadm_init is not failed
+      when: kubeadm_init.changed
 
     - name: Apply Flannel CNI plugin
-      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-      when: kubeadm_init is not failed
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel.yaml
+      when: kubeadm_init.changed
 
     # Templating Flask and React deployment and service files
     - name: Template Flask backend deployment file
