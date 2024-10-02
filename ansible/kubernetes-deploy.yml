@@ -55,8 +55,27 @@
         - kubectl
         - kubeadm
 
+    - name: Create kubelet systemd service file
+      copy:
+        dest: /etc/systemd/system/kubelet.service
+        content: |
+          [Unit]
+          Description=kubelet: The Kubernetes Node Agent
+          Documentation=https://kubernetes.io/docs/concepts/overview/working-with-objects/kubelet/
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/kubelet
+          Restart=always
+          RestartSec=10
+          LimitNOFILE=1048576
+          LimitNPROC=4096
+
+          [Install]
+          WantedBy=multi-user.target
+
     - name: Enable and start kubelet
-      service:
+      systemd:
         name: kubelet
         state: started
         enabled: yes
@@ -107,8 +126,4 @@
     - name: Apply Flask backend service
       shell: kubectl apply -f /tmp/flask-service.yml
 
-    - name: Apply React frontend deployment
-      shell: kubectl apply -f /tmp/react-deployment.yml
-
-    - name: Apply React frontend service
-      shell: kubectl apply -f /tmp/react-service.yml
+    - name: Apply Re
