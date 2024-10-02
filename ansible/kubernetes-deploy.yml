@@ -21,14 +21,9 @@
         state: started
         enabled: yes
 
-    - name: Stop all running Docker containers
+    - name: Stop and remove all Docker containers
       shell: |
-        docker ps -q | xargs --no-run-if-empty docker stop
-      ignore_errors: true
-
-    - name: Remove all stopped Docker containers
-      shell: |
-        docker ps -a -q | xargs --no-run-if-empty docker rm
+        docker stop $(docker ps -q) && docker rm $(docker ps -a -q)
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -55,23 +50,12 @@
         name:
           - conntrack
           - socat
-          - iproute2  # includes 'tc'
+          - iproute2 # includes 'tc'
         state: present
 
     - name: Disable swap
       command: swapoff -a
       ignore_errors: yes
-
-    - name: Install Docker
-      amazon_linux_extra:
-        name: docker
-        state: present
-
-    - name: Start and enable Docker
-      service:
-        name: docker
-        state: started
-        enabled: yes
 
     - name: Add Kubernetes YUM repository
       yum_repository:
