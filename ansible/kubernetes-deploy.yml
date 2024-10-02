@@ -11,7 +11,7 @@
         state: present
 
     - name: Install Docker
-      yum:
+      package:
         name: docker
         state: present
 
@@ -21,9 +21,14 @@
         state: started
         enabled: yes
 
-    - name: Stop and remove all Docker containers
+    - name: Stop all running Docker containers
       shell: |
-        docker stop $(docker ps -q) && docker rm $(docker ps -a -q)
+        docker ps -q | xargs --no-run-if-empty docker stop
+      ignore_errors: true
+
+    - name: Remove all stopped Docker containers
+      shell: |
+        docker ps -a -q | xargs --no-run-if-empty docker rm
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -45,24 +50,46 @@
         name: "*"
         state: latest
 
-    - name: Add Kubernetes YUM repository
-      yum_repository:
-        name: kubernetes
-        description: Kubernetes Repo
-        baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-        gpgcheck: yes
-        enabled: yes
-        gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
-
-    - name: Install kubelet, kubectl, and kubeadm
+    - name: Install required packages for Kubernetes
       yum:
         name:
-          - kubelet
-          - kubectl
-          - kubeadm
+          - conntrack
+          - socat
+          - iproute
+          - bash
         state: present
 
-    - name: Enable and start kubelet
+    - name: Disable swap
+      command: swapoff -a
+      ignore_errors: yes
+
+    - name: Download kubelet, kubectl, and kubeadm binaries
+      get_url:
+        url: "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: "0755"
+      loop:
+        - kubelet
+        - kubectl
+        - kubeadm
+
+    - name: Create kubelet systemd service
+      copy:
+        dest: /etc/systemd/system/kubelet.service
+        content: |
+          [Unit]
+          Description=kubelet: The Kubernetes Node Agent
+          Documentation=https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/kubelet
+          Restart=always
+          RestartSec=10
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and enable kubelet service
       service:
         name: kubelet
         state: started
