@@ -11,7 +11,6 @@
       package:
         name: python3
         state: present
-      # Using package module for compatibility across distributions
 
     - name: Install Docker
       package:
@@ -47,6 +46,15 @@
         fi
       register: remove_images
       changed_when: "'No images to remove' not in remove_images.stdout"
+
+    - name: Add Kubernetes repository
+      yum_repository:
+        name: kubernetes
+        description: Kubernetes repository
+        baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
 
     - name: Install Kubernetes tools
       package:
