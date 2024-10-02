@@ -49,7 +49,7 @@
       yum_repository:
         name: kubernetes
         description: Kubernetes Repo
-        baseurl: https://packages.cloud.google.com/yum/doc/yum-key.gpg
+        baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
         gpgcheck: yes
         enabled: yes
         gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
