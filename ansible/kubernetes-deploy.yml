@@ -47,7 +47,8 @@
 
     - name: Download kubelet, kubectl, and kubeadm binaries
       shell: |
-        curl -LO "https://storage.googleapis.com/kubernetes-release/release/{{ item }}/bin/linux/amd64/{{ item }}"
+        KUBE_VERSION={{ lookup('pipe', 'curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt') }}
+        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/{{ item }}"
         chmod +x {{ item }}
         mv {{ item }} /usr/local/bin/
       loop:
