@@ -7,38 +7,16 @@
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
 
-    - name: Ensure Python 3 is installed (Debian/Ubuntu)
-      apt:
+    - name: Ensure Python 3 is installed
+      package:
         name: python3
         state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
+      # Using package module for compatibility across distributions
 
-    - name: Ensure Python 3 is installed (RHEL/CentOS)
-      yum:
-        name: python3
-        state: present
-      when: ansible_facts['os_family'] == "RedHat"
-
-    - name: Install python3-apt (Debian/Ubuntu)
-      apt:
-        name: python3-apt
-        state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
-
-    - name: Install Docker if not already installed (Debian/Ubuntu)
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
-
-    - name: Install Docker if not already installed (RHEL/CentOS)
-      yum:
+    - name: Install Docker
+      package:
         name: docker
         state: present
-      when: ansible_facts['os_family'] == "RedHat"
 
     - name: Ensure Docker service is running
       service:
@@ -70,46 +48,26 @@
       register: remove_images
       changed_when: "'No images to remove' not in remove_images.stdout"
 
-    - name: Update apt package cache
-      apt:
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
-
     - name: Install Kubernetes tools
-      apt:
+      package:
         name: "{{ item }}"
         state: present
       loop:
-        - kubeadm
         - kubelet
         - kubectl
-      when: ansible_facts['os_family'] == "Debian"
-      register: k8s_install_result
-
-    - name: Debug Kubernetes installation result
-      debug:
-        var: k8s_install_result
+        - kubeadm
 
     - name: Initialize Kubernetes control-plane
       shell: kubeadm init --pod-network-cidr=10.244.0.0/16
-      when: ansible_facts['os_family'] == "Debian"
-      register: k8s_init_result
-      ignore_errors: true
-
-    - name: Debug Kubernetes initialization result
-      debug:
-        var: k8s_init_result
 
     - name: Configure kubectl for root
       shell: |
         mkdir -p $HOME/.kube
         cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
         chown $(id -u):$(id -g) $HOME/.kube/config
-      when: k8s_init_result is succeeded
 
     - name: Apply Flannel CNI plugin
       shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-      when: k8s_init_result is succeeded
 
     - name: Template Flask backend deployment file
       template:
