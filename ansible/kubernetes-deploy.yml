@@ -45,19 +45,11 @@
       register: remove_images
       changed_when: "'No images to remove' not in remove_images.stdout"
 
-    - name: Add Kubernetes repository
-      yum_repository:
-        name: kubernetes
-        description: Kubernetes repository
-        baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-        gpgcheck: yes
-        enabled: yes
-        gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
-
-    - name: Install Kubernetes tools
-      package:
-        name: "{{ item }}"
-        state: present
+    - name: Download kubelet, kubectl, and kubeadm binaries
+      shell: |
+        curl -LO "https://storage.googleapis.com/kubernetes-release/release/{{ item }}/bin/linux/amd64/{{ item }}"
+        chmod +x {{ item }}
+        mv {{ item }} /usr/local/bin/
       loop:
         - kubelet
         - kubectl
