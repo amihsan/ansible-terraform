@@ -1,6 +1,8 @@
 ---
 - hosts: app_server
   become: true
+  vars_files:
+    - secrets.yml
   tasks:
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
