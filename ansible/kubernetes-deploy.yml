@@ -16,77 +16,30 @@
         state: absent
       ignore_errors: true
 
-    - name: Install required packages individually
+    - name: Install required packages
       yum:
         name: "{{ item }}"
         state: present
       loop:
-        - conntrack
-        - socat
-        - bash
         - curl
+        - socat
+        - conntrack
+        - bash
 
-    - name: Install Docker
-      package:
-        name: docker
-        state: present
-
-    - name: Ensure Docker service is running
-      service:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Stop all running Docker containers
-      shell: docker ps -q | xargs --no-run-if-empty docker stop
-      ignore_errors: true
-
-    - name: Remove all stopped Docker containers
-      shell: docker ps -a -q | xargs --no-run-if-empty docker rm
-      ignore_errors: true
-
-    - name: Remove all unused Docker images
-      command: docker image prune -af
-
-    - name: Remove all Docker images
+    - name: Install K3s
       shell: |
-        images=$(docker images -q)
-        if [ -n "$images" ]; then
-          docker rmi -f $images
-        else
-          echo "No images to remove"
-        fi
-      register: remove_images
-      changed_when: "'No images to remove' not in remove_images.stdout"
+        curl -sfL https://get.k3s.io | sh -
+      register: k3s_install
+      until: k3s_install is succeeded
+      retries: 5
+      delay: 10
 
-    - name: Update system packages
-      yum:
-        name: "*"
-        state: latest
-
-    - name: Download Minikube binary
-      get_url:
-        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-        dest: /usr/local/bin/minikube
-        mode: '0755'
-
-    - name: Download kubectl binary
-      get_url:
-        url: https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl
-        dest: /usr/local/bin/kubectl
-        mode: '0755'
-
-    - name: Start Minikube
-      command: minikube start --driver=docker
-      register: minikube_start
-      failed_when: minikube_start.rc != 0
-
-    - name: Verify Minikube status
-      command: minikube status
-      register: minikube_status
+    - name: Check K3s status
+      command: k3s kubectl get nodes
+      register: k3s_status
 
     - debug:
-        var: minikube_status.stdout
+        var: k3s_status.stdout
 
     # Templating Flask and React deployment and service files
     - name: Template Flask backend deployment file
@@ -111,19 +64,19 @@
 
     # Applying deployments and services
     - name: Apply Flask backend deployment
-      command: kubectl apply -f /tmp/flask-deployment.yml
+      command: k3s kubectl apply -f /tmp/flask-deployment.yml
 
     - name: Apply Flask backend service
-      command: kubectl apply -f /tmp/flask-service.yml
+      command: k3s kubectl apply -f /tmp/flask-service.yml
 
     - name: Apply React frontend deployment
-      command: kubectl apply -f /tmp/react-deployment.yml
+      command: k3s kubectl apply -f /tmp/react-deployment.yml
 
     - name: Apply React frontend service
-      command: kubectl apply -f /tmp/react-service.yml
+      command: k3s kubectl apply -f /tmp/react-service.yml
 
     - name: Verify deployment status
-      command: kubectl get deployments
+      command: k3s kubectl get deployments
       register: deployments_status
 
     - debug:
