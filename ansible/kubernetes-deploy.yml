@@ -1,8 +1,6 @@
 ---
 - hosts: app_server
   become: true
-  vars_files:
-    - secrets.yml
   tasks:
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
@@ -65,17 +63,31 @@
         - kubectl
         - kubeadm
 
+    - name: Enable and start kubelet
+      service:
+        name: kubelet
+        state: started
+        enabled: yes
+
     - name: Initialize Kubernetes control-plane
       shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init
+      ignore_errors: true
+
+    - name: Debug Kubernetes initialization result
+      debug:
+        var: kubeadm_init
 
     - name: Configure kubectl for root
       shell: |
         mkdir -p $HOME/.kube
         cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
         chown $(id -u):$(id -g) $HOME/.kube/config
+      when: kubeadm_init is not failed
 
     - name: Apply Flannel CNI plugin
       shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      when: kubeadm_init is not failed
 
     - name: Template Flask backend deployment file
       template:
