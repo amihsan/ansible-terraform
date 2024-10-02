@@ -5,8 +5,8 @@
   vars_files:
     - secrets.yml
   tasks:
-    - name: Gather facts about the system
-      setup:
+    - name: Gather EC2 instance metadata
+      ec2_metadata_facts:
 
     - name: Ensure Python 3 is installed (Debian/Ubuntu)
       apt:
