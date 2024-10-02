@@ -50,7 +50,7 @@
         name:
           - conntrack
           - socat
-          - iproute2 # includes 'tc'
+          - iproute # Changed from 'iproute2' to 'iproute'
         state: present
 
     - name: Disable swap
