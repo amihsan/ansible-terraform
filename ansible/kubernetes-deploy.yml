@@ -100,6 +100,7 @@
       shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
       when: kubeadm_init is not failed
 
+    # Templating Flask and React deployment and service files
     - name: Template Flask backend deployment file
       template:
         src: ./kubernetes/flask-deployment.yml.j2
@@ -120,6 +121,7 @@
         src: ./kubernetes/react-service.yml.j2
         dest: /tmp/react-service.yml
 
+    # Applying deployments and services
     - name: Apply Flask backend deployment
       shell: kubectl apply -f /tmp/flask-deployment.yml
 
