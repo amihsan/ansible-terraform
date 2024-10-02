@@ -5,6 +5,18 @@
   vars_files:
     - secrets.yml
   tasks:
+    - name: Ensure Python 3 is installed
+      apt:
+        name: python3
+        state: present
+        update_cache: yes
+
+    - name: Install python3-apt dependency
+      apt:
+        name: python3-apt
+        state: present
+        update_cache: yes
+
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
 
@@ -26,13 +38,50 @@
         state: started
         enabled: yes
 
-    - name: Stop and remove all Docker containers
-      docker_container:
-        name: "{{ item }}"
-        state: absent
-        force_kill: yes
-      loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+    - name: Stop all running Docker containers
+      shell: |
+        docker ps -q | xargs --no-run-if-empty docker stop
       ignore_errors: true
+
+    - name: Remove all stopped Docker containers
+      shell: |
+        docker ps -a -q | xargs --no-run-if-empty docker rm
+      ignore_errors: true
+
+    # ---
+    # - hosts: app_server
+    #   become: true
+    #   vars_files:
+    #     - secrets.yml
+    #   tasks:
+    #     - name: Gather EC2 instance metadata
+    #       ec2_metadata_facts:
+
+    #     - name: Check if Docker is installed
+    #       command: docker --version
+    #       register: docker_version
+    #       ignore_errors: true
+
+    #     - name: Install Docker if not already installed
+    #       apt:
+    #         name: docker.io
+    #         state: present
+    #         update_cache: yes
+    #       when: docker_version.failed
+
+    #     - name: Ensure Docker service is running
+    #       service:
+    #         name: docker
+    #         state: started
+    #         enabled: yes
+
+    #     - name: Stop and remove all Docker containers
+    #       docker_container:
+    #         name: "{{ item }}"
+    #         state: absent
+    #         force_kill: yes
+    #       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+    #       ignore_errors: true
 
     - name: Remove all unused Docker images
       command: docker image prune -af
