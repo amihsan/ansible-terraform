@@ -45,17 +45,10 @@
         name: "*"
         state: latest
 
-    - name: Install required packages for Kubernetes
-      package:
-        name:
-          - conntrack
-          - socat
-          - iproute # Changed from 'iproute2' to 'iproute'
+    - name: Enable Extras Repository for Amazon Linux 2
+      amazon_linux_extra:
+        name: kubernetes
         state: present
-
-    - name: Disable swap
-      command: swapoff -a
-      ignore_errors: yes
 
     - name: Add Kubernetes YUM repository
       yum_repository:
@@ -64,6 +57,7 @@
         baseurl: https://packages.cloud.google.com/yum/doc/yum-key.gpg
         gpgcheck: yes
         enabled: yes
+        gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
 
     - name: Install kubelet, kubectl, and kubeadm
       yum:
