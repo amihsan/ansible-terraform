@@ -10,14 +10,21 @@
         name: python3
         state: present
 
-    - name: Install required packages
+    - name: Remove conflicting curl-minimal package
       yum:
-        name:
-          - conntrack
-          - socat
-          - bash
-          - curl
+        name: curl-minimal
+        state: absent
+      ignore_errors: true
+
+    - name: Install required packages individually
+      yum:
+        name: "{{ item }}"
         state: present
+      loop:
+        - conntrack
+        - socat
+        - bash
+        - curl
 
     - name: Install Docker
       package:
@@ -61,13 +68,13 @@
       get_url:
         url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
         dest: /usr/local/bin/minikube
-        mode: '0755'
+        mode: "0755"
 
     - name: Download kubectl binary
       get_url:
         url: https://storage.googleapis.com/kubernetes-release/release/latest/bin/linux/amd64/kubectl
         dest: /usr/local/bin/kubectl
-        mode: '0755'
+        mode: "0755"
 
     - name: Start Minikube
       command: minikube start --driver=docker
