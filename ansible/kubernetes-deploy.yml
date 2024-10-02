@@ -11,7 +11,7 @@
         state: present
 
     - name: Install Docker
-      package:
+      yum:
         name: docker
         state: present
 
@@ -44,11 +44,6 @@
       yum:
         name: "*"
         state: latest
-
-    - name: Enable Extras Repository for Amazon Linux 2
-      amazon_linux_extra:
-        name: kubernetes
-        state: present
 
     - name: Add Kubernetes YUM repository
       yum_repository:
