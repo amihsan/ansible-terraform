@@ -70,16 +70,20 @@
       register: remove_images
       changed_when: "'No images to remove' not in remove_images.stdout"
 
-    - name: Install Docker and Kubernetes tools
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Install Kubernetes tools
       apt:
         name: "{{ item }}"
         state: present
-        update_cache: yes
       loop:
-        - docker.io
         - kubeadm
         - kubelet
         - kubectl
+      when: ansible_facts['os_family'] == "Debian"
 
     - name: Initialize Kubernetes control-plane
       shell: kubeadm init --pod-network-cidr=10.244.0.0/16
