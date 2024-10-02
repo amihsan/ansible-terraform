@@ -10,6 +10,15 @@
         name: python3
         state: present
 
+    - name: Install required packages
+      yum:
+        name:
+          - conntrack
+          - socat
+          - bash
+          - curl
+        state: present
+
     - name: Install Docker
       package:
         name: docker
@@ -22,13 +31,11 @@
         enabled: yes
 
     - name: Stop all running Docker containers
-      shell: |
-        docker ps -q | xargs --no-run-if-empty docker stop
+      shell: docker ps -q | xargs --no-run-if-empty docker stop
       ignore_errors: true
 
     - name: Remove all stopped Docker containers
-      shell: |
-        docker ps -a -q | xargs --no-run-if-empty docker rm
+      shell: docker ps -a -q | xargs --no-run-if-empty docker rm
       ignore_errors: true
 
     - name: Remove all unused Docker images
@@ -50,65 +57,29 @@
         name: "*"
         state: latest
 
-    - name: Install required packages for Kubernetes
-      yum:
-        name:
-          - conntrack
-          - socat
-          - iproute
-          - bash
-        state: present
-
-    - name: Disable swap
-      command: swapoff -a
-      ignore_errors: yes
-
-    - name: Download kubelet, kubectl, and kubeadm binaries
+    - name: Download Minikube binary
       get_url:
-        url: "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/{{ item }}"
-        dest: "/usr/local/bin/{{ item }}"
-        mode: "0755"
-      loop:
-        - kubelet
-        - kubectl
-        - kubeadm
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /usr/local/bin/minikube
+        mode: '0755'
 
-    - name: Create kubelet systemd service
-      copy:
-        dest: /etc/systemd/system/kubelet.service
-        content: |
-          [Unit]
-          Description=kubelet: The Kubernetes Node Agent
-          Documentation=https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet
-          After=network.target
+    - name: Download kubectl binary
+      get_url:
+        url: https://storage.googleapis.com/kubernetes-release/release/latest/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
 
-          [Service]
-          ExecStart=/usr/local/bin/kubelet
-          Restart=always
-          RestartSec=10
-          [Install]
-          WantedBy=multi-user.target
+    - name: Start Minikube
+      command: minikube start --driver=docker
+      register: minikube_start
+      failed_when: minikube_start.rc != 0
 
-    - name: Start and enable kubelet service
-      service:
-        name: kubelet
-        state: started
-        enabled: yes
+    - name: Verify Minikube status
+      command: minikube status
+      register: minikube_status
 
-    - name: Initialize Kubernetes control-plane
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16
-      register: kubeadm_init
-      failed_when: kubeadm_init.rc != 0
-
-    - name: Set up kubeconfig for root
-      command: >
-        mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config && 
-        chown $(id -u):$(id -g) $HOME/.kube/config
-      when: kubeadm_init.changed
-
-    - name: Apply Flannel CNI plugin
-      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel.yaml
-      when: kubeadm_init.changed
+    - debug:
+        var: minikube_status.stdout
 
     # Templating Flask and React deployment and service files
     - name: Template Flask backend deployment file
@@ -133,13 +104,20 @@
 
     # Applying deployments and services
     - name: Apply Flask backend deployment
-      shell: kubectl apply -f /tmp/flask-deployment.yml
+      command: kubectl apply -f /tmp/flask-deployment.yml
 
     - name: Apply Flask backend service
-      shell: kubectl apply -f /tmp/flask-service.yml
+      command: kubectl apply -f /tmp/flask-service.yml
 
     - name: Apply React frontend deployment
-      shell: kubectl apply -f /tmp/react-deployment.yml
+      command: kubectl apply -f /tmp/react-deployment.yml
 
     - name: Apply React frontend service
-      shell: kubectl apply -f /tmp/react-service.yml
+      command: kubectl apply -f /tmp/react-service.yml
+
+    - name: Verify deployment status
+      command: kubectl get deployments
+      register: deployments_status
+
+    - debug:
+        var: deployments_status.stdout
