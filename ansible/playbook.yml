@@ -5,32 +5,41 @@
   vars_files:
     - secrets.yml
   tasks:
-    - name: Ensure Python 3 is installed
+    - name: Gather facts about the system
+      setup:
+
+    - name: Ensure Python 3 is installed (Debian/Ubuntu)
       apt:
         name: python3
         state: present
         update_cache: yes
+      when: ansible_facts['os_family'] == "Debian"
 
-    - name: Install python3-apt dependency
+    - name: Ensure Python 3 is installed (RHEL/CentOS)
+      yum:
+        name: python3
+        state: present
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: Install python3-apt (Debian/Ubuntu)
       apt:
         name: python3-apt
         state: present
         update_cache: yes
+      when: ansible_facts['os_family'] == "Debian"
 
-    - name: Gather EC2 instance metadata
-      ec2_metadata_facts:
-
-    - name: Check if Docker is installed
-      command: docker --version
-      register: docker_version
-      ignore_errors: true
-
-    - name: Install Docker if not already installed
+    - name: Install Docker if not already installed (Debian/Ubuntu)
       apt:
         name: docker.io
         state: present
         update_cache: yes
-      when: docker_version.failed
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Install Docker if not already installed (RHEL/CentOS)
+      yum:
+        name: docker
+        state: present
+      when: ansible_facts['os_family'] == "RedHat"
 
     - name: Ensure Docker service is running
       service:
