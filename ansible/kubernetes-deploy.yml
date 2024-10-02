@@ -126,4 +126,8 @@
     - name: Apply Flask backend service
       shell: kubectl apply -f /tmp/flask-service.yml
 
-    - name: Apply Re
+    - name: Apply React frontend deployment
+      shell: kubectl apply -f /tmp/react-deployment.yml
+
+    - name: Apply React frontend service
+      shell: kubectl apply -f /tmp/react-service.yml
