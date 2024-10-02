@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      containers:
+        - name: flask-app
+          image: amihsan/flask-terraform-backend:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGODB_URI
+              value: "{{ MONGODB_URI }}"
+            - name: DATABASE_NAME
+              value: "{{ DATABASE_NAME }}"
