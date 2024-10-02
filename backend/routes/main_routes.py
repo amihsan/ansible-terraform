@@ -22,7 +22,7 @@ db = client[database_name]
 @bp.route('/')
 def index(): 
     try:
-        return '<b><big>Hello From Travos lab</big></b>'
+        return '<b><big>Hello From Travos lab (Backend) </big></b>'
     except Exception as e:
         error_message = f'An error occurred: {str(e)}'
         return error_message
