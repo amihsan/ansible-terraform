@@ -17,16 +17,9 @@ const Body = () => {
   const [scenarios, setScenarios] = useState([]);
   const [showThreeButtons, setShowThreeButtons] = useState(false);
 
-  // Access the API URL from environment variables for docker
+  // Access the API URL from environment variables
   const baseUrl =
     process.env.REACT_APP_API_URL || window._env_.REACT_APP_API_URL;
-  // const baseUrl = window._env_.REACT_APP_API_URL;
-
-  // Access the API URL from environment variables for local pc
-  // const baseUrl = process.env.REACT_APP_API_URL;
-
-  // const baseUrl = ''; // For kubernetes
-  // console.log(`${baseUrl}/api/getAllScenarios`)
 
   useEffect(() => {
     axios
