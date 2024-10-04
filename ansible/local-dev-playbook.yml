@@ -1,0 +1,187 @@
+---
+- hosts: localhost
+  connection: local
+  become: true
+  vars_files:
+    - secrets.yml
+  tasks:
+    # Ensure Docker is running before starting Minikube
+    - name: Ensure Docker is running
+      shell: sudo systemctl start docker
+      become: true
+      ignore_errors: true
+
+    # Test Docker access to verify it can be used
+    - name: Test Docker access
+      shell: docker ps
+      register: docker_test
+      failed_when: docker_test.rc != 0
+
+    - debug:
+        var: docker_test.stdout
+
+    # Check if Minikube is installed
+    - name: Check if Minikube is installed
+      command: minikube version
+      register: minikube_check
+      changed_when: false
+      failed_when: false # Prevent failure if Minikube is not installed
+
+    - name: Fail if Minikube is not installed
+      fail:
+        msg: "Minikube is not installed. Please install Minikube first."
+      when: minikube_check.rc != 0
+
+    # Check if Minikube profile exists
+    - name: Check if Minikube profile exists
+      command: minikube profile list
+      register: profile_list
+      changed_when: false
+      failed_when: false # Prevent failure if no profiles exist
+
+    - name: Set profile existence fact
+      set_fact:
+        profile_exists: "{{ 'minikube' in profile_list.stdout }}"
+
+    # Start Minikube if the profile does not exist
+    - name: Start Minikube if profile does not exist
+      shell: minikube start
+      become: false # Ensure Minikube runs as the regular user
+      when: not profile_exists
+      retries: 5
+      delay: 10
+
+    # Now check if Minikube is running
+    - name: Check if Minikube is running
+      shell: minikube status
+      register: minikube_status
+      changed_when: false
+      when: profile_exists
+
+    - debug:
+        var: minikube_status.stdout
+
+    # Template Flask backend deployment file
+    - name: Template Flask backend deployment file
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/flask-deployment.yml.j2"
+        dest: /tmp/flask-deployment.yml
+
+    # Template Flask backend service file
+    - name: Template Flask backend service file
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/flask-service.yml.j2"
+        dest: /tmp/flask-service.yml
+
+    # Template React frontend deployment file
+    - name: Template React frontend deployment file
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/react-deployment.yml.j2"
+        dest: /tmp/react-deployment.yml
+
+    # Template React frontend service file
+    - name: Template React frontend service file
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/react-service.yml.j2"
+        dest: /tmp/react-service.yml
+
+    # Apply Flask backend deployment
+    - name: Apply Flask backend deployment
+      shell: minikube kubectl -- apply -f /tmp/flask-deployment.yml
+      become: false
+
+    # Apply Flask backend service
+    - name: Apply Flask backend service
+      shell: minikube kubectl -- apply -f /tmp/flask-service.yml
+      become: false
+
+    # Apply React frontend deployment
+    - name: Apply React frontend deployment
+      shell: minikube kubectl -- apply -f /tmp/react-deployment.yml
+      become: false
+
+    # Apply React frontend service
+    - name: Apply React frontend service
+      shell: minikube kubectl -- apply -f /tmp/react-service.yml
+      become: false
+
+    # Verify deployment status
+    - name: Verify deployment status
+      shell: minikube kubectl -- get deployments
+      register: deployments_status
+      become: false
+
+    - debug:
+        var: deployments_status.stdout
+# ---
+# - hosts: localhost
+#   connection: local
+#   become: true
+#   tasks:
+#     - name: Check if Docker is installed
+#       command: docker --version
+#       register: docker_version
+#       ignore_errors: true
+
+#     - name: Install Docker if not already installed
+#       apt:
+#         name: docker.io
+#         state: present
+#         update_cache: yes
+#       when: docker_version.failed
+
+#     - name: Ensure Docker service is running
+#       service:
+#         name: docker
+#         state: started
+#         enabled: yes
+
+#     - name: Stop and remove all Docker containers
+#       docker_container:
+#         name: "{{ item }}"
+#         state: absent
+#         force_kill: yes
+#       loop: "{{ lookup('pipe', 'docker ps -a -q') | split('\n') }}"
+#       ignore_errors: true
+
+#     - name: Remove all unused Docker images
+#       command: docker image prune -af
+
+#     - name: Pull Flask backend image
+#       docker_image:
+#         name: amihsan/flask-terraform-backend:latest
+#         source: pull
+
+#     - name: Pull React frontend image
+#       docker_image:
+#         name: amihsan/react-terraform-frontend:latest
+#         source: pull
+
+#     - name: Create a custom Docker network
+#       docker_network:
+#         name: app-network
+#         driver: bridge
+
+#     - name: Run Flask backend container
+#       docker_container:
+#         name: flask-app
+#         image: amihsan/flask-terraform-backend:latest
+#         state: started
+#         restart_policy: always
+#         networks:
+#           - name: app-network
+#         published_ports:
+#           - "5000:5000"
+
+#     - name: Run React frontend container
+#       docker_container:
+#         name: react-app
+#         image: amihsan/react-terraform-frontend:latest
+#         state: started
+#         restart_policy: always
+#         networks:
+#           - name: app-network
+#         published_ports:
+#           - "80:80"
+#         env:
+#           REACT_APP_API_URL: "http://localhost:5000"

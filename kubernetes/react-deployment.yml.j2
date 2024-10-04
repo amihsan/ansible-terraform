@@ -6,11 +6,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: react
+      app: react-app
   template:
     metadata:
       labels:
-        app: react
+        app: react-app
     spec:
       containers:
         - name: react-app
@@ -19,4 +19,5 @@ spec:
             - containerPort: 80
           env:
             - name: REACT_APP_API_URL
-              value: "http://{{ ansible_ec2_public_ipv4 }}:5000"
+              value: "http://flask-app:5000"
+              
