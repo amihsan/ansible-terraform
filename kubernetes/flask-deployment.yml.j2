@@ -19,6 +19,19 @@ spec:
             - containerPort: 5000
           env:
             - name: MONGODB_URI
-              value: "{{ MONGODB_URI }}"
+              value: "{{ MONGODB_URI }}"  # Decrypted from Ansible Vault
             - name: DATABASE_NAME
-              value: "{{ DATABASE_NAME }}"
+              value: "{{ DATABASE_NAME }}"  # Decrypted from Ansible Vault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app
+spec:
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30001  # Exposes Flask on NodePort 30001
+  selector:
+    app: flask-app

@@ -1,85 +1,52 @@
----
-- hosts: app_server
-  become: true
-  vars_files:
-    - secrets.yml
+- hosts: localhost
+  connection: local
+  become: false # Ensure that the playbook doesn't run tasks as root unnecessarily
   tasks:
-    - name: Gather EC2 instance metadata
-      ec2_metadata_facts:
+    - name: Decrypt Ansible Vault secrets
+      include_vars:
+        file: secrets.yml
+        name: secrets
 
-    - name: Ensure Python 3 is installed
-      package:
-        name: python3
+    - name: Check if Minikube is installed
+      command: minikube version
+      ignore_errors: yes
+      register: minikube_installed
+
+    - name: Install Minikube if not installed (Ubuntu example)
+      apt:
+        name: minikube
         state: present
+      when: minikube_installed.rc != 0
 
-    - name: Remove conflicting curl-minimal package
-      yum:
-        name: curl-minimal
-        state: absent
-      ignore_errors: true
+    - name: Start Minikube without root privileges
+      command: minikube start --driver=docker
+      become: false
 
-    - name: Install required packages
-      yum:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - curl
-        - socat
-        - conntrack
-        - bash
+    - name: Get Minikube IP
+      command: minikube ip
+      register: minikube_ip
 
-    - name: Install K3s
-      shell: |
-        curl -sfL https://get.k3s.io | sh -
-      register: k3s_install
-      until: k3s_install is succeeded
-      retries: 5
-      delay: 10
-
-    - name: Check K3s status
-      command: k3s kubectl get nodes
-      register: k3s_status
-
-    - debug:
-        var: k3s_status.stdout
-
-    # Templating Flask and React deployment and service files
-    - name: Template Flask backend deployment file
+    # Deploy Flask App
+    - name: Deploy Flask App to Kubernetes
       template:
-        src: ./kubernetes/flask-deployment.yml.j2
+        src: "{{ playbook_dir }}/../kubernetes/flask-deployment.yml.j2" # Using playbook_dir for path resolution
         dest: /tmp/flask-deployment.yml
+      vars:
+        minikube_ip: "{{ minikube_ip.stdout }}"
+        MONGODB_URI: "{{ secrets.MONGODB_URI }}" # Inject decrypted secret
+        DATABASE_NAME: "{{ secrets.DATABASE_NAME }}" # Inject decrypted secret
 
-    - name: Template Flask backend service file
-      template:
-        src: ./kubernetes/flask-service.yml.j2
-        dest: /tmp/flask-service.yml
+    - name: Apply Flask Deployment
+      command: kubectl apply -f /tmp/flask-deployment.yml
 
-    - name: Template React frontend deployment file
+    # Deploy React App
+    - name: Deploy React App to Kubernetes
       template:
-        src: ./kubernetes/react-deployment.yml.j2
+        src: "{{ playbook_dir }}/../kubernetes/react-deployment.yml.j2" # Using playbook_dir for path resolution
         dest: /tmp/react-deployment.yml
+      vars:
+        minikube_ip: "{{ minikube_ip.stdout }}"
+        REACT_APP_API_URL: "http://{{ minikube_ip.stdout }}:30001" # API URL for React to connect to Flask backend
 
-    - name: Template React frontend service file
-      template:
-        src: ./kubernetes/react-service.yml.j2
-        dest: /tmp/react-service.yml
-
-    # Applying deployments and services
-    - name: Apply Flask backend deployment
-      command: k3s kubectl apply -f /tmp/flask-deployment.yml
-
-    - name: Apply Flask backend service
-      command: k3s kubectl apply -f /tmp/flask-service.yml
-
-    - name: Apply React frontend deployment
-      command: k3s kubectl apply -f /tmp/react-deployment.yml
-
-    - name: Apply React frontend service
-      command: k3s kubectl apply -f /tmp/react-service.yml
-
-    - name: Verify deployment status
-      command: k3s kubectl get deployments
-      register: deployments_status
-
-    - debug:
-        var: deployments_status.stdout
+    - name: Apply React Deployment
+      command: kubectl apply -f /tmp/react-deployment.yml

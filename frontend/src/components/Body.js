@@ -21,6 +21,8 @@ const Body = () => {
   const baseUrl =
     process.env.REACT_APP_API_URL || window._env_.REACT_APP_API_URL;
 
+  console.log(baseUrl); // debug api url
+
   useEffect(() => {
     axios
       .get(`${baseUrl}/api/getAllScenarios`)

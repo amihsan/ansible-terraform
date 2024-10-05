@@ -19,5 +19,17 @@ spec:
             - containerPort: 80
           env:
             - name: REACT_APP_API_URL
-              value: "http://192.168.58.2:30081"
-              
+              value: "{{ REACT_APP_API_URL }}"  # Use the variable passed from the playbook
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: react-app
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 80
+      nodePort: 30002  # Exposes React on NodePort 30002
+  selector:
+    app: react-app
