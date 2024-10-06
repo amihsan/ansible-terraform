@@ -87,6 +87,6 @@ For Docker MongoDB atlas is used. Nginx is used used to serve react build and pr
 ##### For Production:
 
 ```bash
-docker-compose.yml up --build -d
+docker-compose.yml up -d
 ```
 
