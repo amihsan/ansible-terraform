@@ -28,10 +28,9 @@ kind: Service
 metadata:
   name: flask-app
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 5000
       targetPort: 5000
-      nodePort: 30001  # Exposes Flask on NodePort 30001
   selector:
     app: flask-app
