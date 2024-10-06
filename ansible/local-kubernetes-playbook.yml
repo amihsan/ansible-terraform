@@ -1,0 +1,45 @@
+---
+- hosts: localhost
+  connection: local
+  become: false
+  tasks:
+    - name: Decrypt Ansible Vault secrets
+      include_vars:
+        file: secrets.yml
+        name: secrets
+
+    - name: Check if Minikube is installed
+      command: minikube version
+      ignore_errors: yes
+      register: minikube_installed
+
+    - name: Install Minikube if not installed (Ubuntu example)
+      apt:
+        name: minikube
+        state: present
+      when: minikube_installed.rc != 0
+
+    - name: Start Minikube without root privileges
+      command: minikube start --driver=docker
+      become: false
+
+    - name: Deploy Flask App to Kubernetes
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/flask-deployment.yml.j2"
+        dest: /tmp/flask-deployment.yml
+      vars:
+        MONGODB_URI: "{{ secrets.MONGODB_URI }}" # Inject decrypted secret
+        DATABASE_NAME: "{{ secrets.DATABASE_NAME }}" # Inject decrypted secret
+
+    - name: Apply Flask Deployment
+      command: kubectl apply -f /tmp/flask-deployment.yml
+
+    - name: Deploy React App to Kubernetes
+      template:
+        src: "{{ playbook_dir }}/../kubernetes/react-deployment.yml.j2"
+        dest: /tmp/react-deployment.yml
+      vars:
+        REACT_APP_API_URL: "{{ secrets.REACT_APP_API_URL }}"
+
+    - name: Apply React Deployment
+      command: kubectl apply -f /tmp/react-deployment.yml
