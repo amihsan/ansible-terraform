@@ -19,9 +19,33 @@
         state: present
       when: minikube_installed.rc != 0
 
+    - name: Check if Minikube profile exists
+      command: minikube profile list
+      register: minikube_profile_list
+      ignore_errors: yes
+
+    - name: Set variable for Minikube profile existence
+      set_fact:
+        minikube_profile_exists: "{{ minikube_profile_list.rc == 0 }}"
+
+    - name: Check if Minikube is already running
+      command: minikube status
+      register: minikube_status
+      when: minikube_profile_exists # Only check status if profile exists
+      ignore_errors: yes
+
+    - name: Set variable for Minikube running status
+      set_fact:
+        minikube_running: "{{ minikube_status.rc == 0 and 'Running' in minikube_status.stdout }}"
+      when: minikube_profile_exists and minikube_status.rc == 0 # Only set if profile exists and status check succeeds
+
+    - name: Determine if Minikube needs to be started
+      set_fact:
+        start_minikube: "{{ not minikube_profile_exists or (minikube_status.rc != 0 or not minikube_running) }}"
+
     - name: Start Minikube without root privileges
       command: minikube start --driver=docker
-      become: false
+      when: start_minikube # Only start if required
 
     - name: Deploy Flask App to Kubernetes
       template:
@@ -43,3 +67,12 @@
 
     - name: Apply React Deployment
       command: kubectl apply -f /tmp/react-deployment.yml
+
+    - name: Wait for Flask pods to be ready
+      command: kubectl wait --for=condition=available --timeout=120s deployment/flask-app # metadata name of flask-deployment.yml.j2
+
+    - name: Wait for React pods to be ready
+      command: kubectl wait --for=condition=available --timeout=120s deployment/react-app # metadata name of react-deployment.yml.j2
+
+    - name: Open React App in Browser
+      command: minikube service react-app
