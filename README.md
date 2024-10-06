@@ -3,7 +3,7 @@
 
 ## 💡 About
 
-This repository contains the TRAVOS app, which integrates both the frontend and backend logic of the application. The app is deployed on AWS EC2 using GitHub Actions with Ansible, Terraform, and Docker Compose. For local development, you can use Ansible, Minikube, and Kubernetes.
+This repository contains the TRAVOS app, which integrates both the frontend and backend logic of the application. The app is deployed on AWS EC2 using GitHub Actions with Ansible, Terraform. For local development, you can use Docker Compose, Ansible, Minikube, and Kubernetes.
 
 ## View Demo
 [Live Demo](https://react-travos-app.vercel.app/)
