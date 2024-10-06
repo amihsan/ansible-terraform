@@ -34,20 +34,23 @@
     - name: Apply Flask Deployment
       command: kubectl apply -f /tmp/flask-deployment.yml
 
-    # Deploy React App
     - name: Deploy React App to Kubernetes
       template:
         src: "{{ playbook_dir }}/../kubernetes/react-deployment.yml.j2"
         dest: /tmp/react-deployment.yml
       vars:
-        REACT_APP_API_URL: "{{ flask_service_url }}"  
+        REACT_APP_API_URL: "{{ secrets.REACT_APP_API_URL }}"
 
     - name: Apply React Deployment
       command: kubectl apply -f /tmp/react-deployment.yml
 
+    # - name: Deploy Nginx ConfigMap
+    #   template:
+    #     src: "{{ playbook_dir }}/../kubernetes/nginx-config.yml.j2"
+    #     dest: /tmp/nginx-config.yml
 
-
-
+    # - name: Apply Nginx ConfigMap
+    #   command: kubectl apply -f /tmp/nginx-config.yml
 # ---
 # - hosts: localhost
 #   connection: local

@@ -19,7 +19,8 @@ spec:
             - containerPort: 80
           env:
             - name: REACT_APP_API_URL
-              value: "http://flask-app:5000"  # Use the variable passed from the playbook
+              value: "{{REACT_APP_API_URL}}"  # Decrypted from Ansible Vault
+
 ---
 apiVersion: v1
 kind: Service
@@ -28,8 +29,7 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 3000
+    - port: 80
       targetPort: 80
-      nodePort: 30002  # Exposes React on NodePort 30002
   selector:
     app: react-app
