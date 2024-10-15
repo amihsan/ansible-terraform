@@ -24,20 +24,6 @@ This repository contains the TRAVOS app, which integrates both the frontend and 
 
 ### ⚙️ Local Setup
 
-1. Install MongoDB on your local machine.
-
-2. Clone the Git repository for both frontend and backend.
-
-3. Setup npm in the frontend root directory:
-
-   ```shell
-   npm install
-
-
-## ⚡ Getting Started
-
-### ⚙️ Local Setup
-
 1. Install MongoDB
 
 2. Clone Git Repository, both frontend and backend.
