@@ -6,6 +6,7 @@
 This repository contains the TRAVOS app, which integrates both the frontend and backend logic of the application. The app is deployed on AWS EC2 using GitHub Actions with Ansible, Terraform. For local development, you can use Docker Compose, Ansible, Minikube, and Kubernetes.
 
 ## View Demo
+
 [Live Demo](https://react-travos-app.vercel.app/)
 
 ### 🧱 Built With
@@ -32,7 +33,7 @@ This repository contains the TRAVOS app, which integrates both the frontend and 
 
    ```shell
    npm install
-
+   ```
 
 ## ⚡ Getting Started
 
@@ -107,6 +108,7 @@ For Docker MongoDB atlas is used. Nginx is used used to serve react build and pr
 ```bash
 docker-compose.yml up -d
 ```
+
 ## 🖥️ Local Deployment with Kubernetes and Minikube
 
 For local deployment using Minikube and Kubernetes, follow the steps below:
@@ -118,6 +120,7 @@ For local deployment using Minikube and Kubernetes, follow the steps below:
 - Kubectl
 
 ### Set Up Kubernetes Cluster
+
 #### 🔐 Encrypting Sensitive Data with Ansible Vault
 
 Ansible Vault allows you to encrypt sensitive data such as passwords and API keys, keeping them secure while using them in your Ansible playbooks. Follow these steps to encrypt your sensitive data:
@@ -126,9 +129,11 @@ Ansible Vault allows you to encrypt sensitive data such as passwords and API key
 
 1. **Create a New Vault File**:
    Use the following command to create a new encrypted vault file:
+
    ```bash
    ansible-vault create secrets.yml
    ```
+
    This will prompt you to enter a password to secure the vault.
 
 2. **Edit the Vault File**: After entering the password, an editor will open. You can add your sensitive information in this file.
@@ -139,6 +144,7 @@ If Minikube and Kubernetes aren't installed, Ansible can automate their installa
 ```bash
 ansible-playbook -i localhost local-kubernetes-playbook.yml --ask-vault-pass
 ```
+
 This will prompt you to enter the password used for encryption.
 
 ## 🌍 Cloud Deployment on AWS EC2
@@ -176,6 +182,3 @@ Each time you push to the main branch, the GitHub Actions workflow automatically
 
 1. Terraform provisioning or updating AWS resources (e.g., EC2 instance).
 2. Ansible managing the deployment of the Flask backend and React frontend containers directly.
-
-
-
