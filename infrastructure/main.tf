@@ -13,7 +13,7 @@ provider "aws" {
 data "aws_instances" "existing_instance" {
   filter {
     name   = "tag:Name"
-    values = ["AnsibleTerraformServer"]
+    values = ["TravosAnsibleTerrafromServer"]
   }
 
   # Ensure we are only looking at running instances
@@ -49,7 +49,7 @@ resource "aws_instance" "app_server" {
   # }
 
   tags = {
-    Name = "AnsibleTerraformServer"
+    Name = "TravosAnsibleTerrafromServer"
   }
 
   lifecycle {
