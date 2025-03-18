@@ -23,5 +23,5 @@ This is the Frontend part of the TRAVOS . So no business logic is here.
 
 1.  Run frontend:
     ```bash
-    npm start
+    npm run dev
     ```

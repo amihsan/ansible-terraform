@@ -82,7 +82,7 @@ This repository contains the TRAVOS app, which integrates both the frontend and 
 2. Run frontend:
 
    ```bash
-   npm start
+   npm run dev
    ```
 
 3. Run backend: after activate venv:

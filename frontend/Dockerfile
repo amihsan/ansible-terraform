@@ -9,15 +9,19 @@ COPY package.json ./
 COPY package-lock.json ./
 RUN npm install
 
-# Copy and build the React app
+# Copy and build the Vite project
 COPY . ./
 RUN npm run build
 
-# Use Nginx to serve the built React app
+# Update Browserslist: caniuse-lite
+RUN npx update-browserslist-db@latest
+
+## The second stage
+# Copy build files and start nginx
 FROM nginx:alpine
 
-# Copy the build output to Nginx's default public directory
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy the built static files from the build stage to the nginx directory
+COPY --from=build /app/frontend/dist /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
 

@@ -1,12 +1,9 @@
-// Define your teal color variable
-$teal: #008080;
+/* custom.scss */
 
+// Override Bootstrap's primary color
+$teal: #008080; // Define your custom color
 
-// Use the teal color in Bootstrap's theme-colors
-$theme-colors: (
-        'primary': $teal,
+// Use @use instead of @import to avoid the deprecation warning
+@use "../node_modules/bootstrap/scss/bootstrap" with (
+  $primary: $teal // Override Bootstrap's primary color
 );
-
-
-// Import Bootstrap SCSS
-@import '../node_modules/bootstrap/scss/bootstrap';
