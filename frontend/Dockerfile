@@ -5,13 +5,14 @@ FROM node:20.9.0-alpine  AS build
 WORKDIR /app/frontend
 
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY package.json ./
+COPY package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy the source code
-COPY . .
+COPY . ./
 
 # Build the Vite app
 RUN npm run build
