@@ -11,7 +11,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
 # Copy the source code
-COPY frontend/ ./
+COPY . . ./
 
 # Build the Vite app
 RUN npm run build
