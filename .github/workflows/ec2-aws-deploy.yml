@@ -58,21 +58,27 @@ jobs:
       # Step 4: Initialize Terraform (Bootstrap)
       - name: Initialize Terraform (Bootstrap)
         run: |
-          terraform init
+          cd infrastructure
+          terraform init -backend-config="bucket=travos-terraform-state-bucket" -backend-config="key=terraform.tfstate" -backend-config="region=eu-central-1" -backend-config="dynamodb_table=terraform-lock-table"
           terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
 
       # Step 5: Re-initialize Terraform with Remote Backend
       - name: Re-initialize Terraform with Remote Backend
-        run: terraform init
+        run: |
+          cd infrastructure
+          terraform init
 
       # Step 6: Apply Terraform to provision EC2 instance
       - name: Apply Terraform for EC2 provisioning
-        run: terraform apply -auto-approve
+        run: |
+          cd infrastructure
+          terraform apply -auto-approve
 
       # Step 7: Capture the EC2 public IP from Terraform output
       - name: Get EC2 Public IP from Terraform
         id: tf_output
         run: |
+          cd infrastructure
           PUBLIC_IP=$(terraform output -raw instance_public_ip)
           echo "PUBLIC_IP=${PUBLIC_IP}" >> $GITHUB_ENV
 
