@@ -5,9 +5,8 @@ export default defineConfig({
   plugins: [react()], // React plugin for JSX support, Fast Refresh, and React optimizations
   css: {
     preprocessorOptions: {
-      sass: {
-        // Suppress deprecation warnings for @import usage
-        quietDeps: true,
+      scss: {
+        quietDeps: true, // Suppress deprecation warnings from Bootstrap's @import
       },
     },
   },
