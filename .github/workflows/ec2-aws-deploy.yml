@@ -3,64 +3,65 @@ name: Terraform Workflow
 on:
   push:
     branches:
-      - main # Trigger workflow on push to the main branch
+      - main  # Trigger workflow on push to the main branch
   pull_request:
     branches:
-      - main # Trigger workflow on PR to the main branch
+      - main  # Trigger workflow on PR to the main branch
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Set up AWS Credentials
-      - name: Set up AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1.4.0 # Ensure the version is correct
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # Correct input name
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Correct input name
-          aws-region: eu-central-1 # The AWS region to use
+    # Step 1: Set up AWS Credentials
+    - name: Set up AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
 
-      # Step 2: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    # Step 2: Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      # Step 3: Initialize Terraform (Bootstrap)
-      - name: Initialize Terraform (Bootstrap)
-        run: |
-          cd infrastructure
-          terraform init  # Initialize Terraform to configure the AWS provider
-          terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
+    # Step 3: Initialize Terraform (Bootstrap)
+    - name: Initialize Terraform (Bootstrap)
+      run: |
+        cd infrastructure
+        terraform init  # Initialize Terraform to configure the AWS provider
+        terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
 
-      # Step 4: Add delay to ensure resources are provisioned
-      - name: Wait for Resources to be Provisioned
-        run: |
-          sleep 30  # Wait for S3 bucket and DynamoDB table to be fully available
+    # Step 4: Add delay to ensure resources are provisioned
+    - name: Wait for Resources to be Provisioned
+      run: |
+        sleep 30  # Wait for S3 bucket and DynamoDB table to be fully available
 
-      # Step 5: Re-initialize Terraform with Remote Backend
-      - name: Re-initialize Terraform with Remote Backend
-        run: |
-          cd infrastructure
-          terraform init  # Re-initialize Terraform to configure the backend
+    # Step 5: Re-initialize Terraform with Remote Backend
+    - name: Re-initialize Terraform with Remote Backend
+      run: |
+        cd infrastructure
+        terraform init  # Re-initialize Terraform to configure the backend
 
-      # Step 6: Apply Terraform for EC2 provisioning
-      - name: Apply Terraform for EC2 provisioning
-        run: |
-          cd infrastructure
-          terraform apply -auto-approve  # Apply the full Terraform configuration to provision EC2 instance
+    # Step 6: Apply Terraform for EC2 provisioning
+    - name: Apply Terraform for EC2 provisioning
+      run: |
+        cd infrastructure
+        terraform apply -auto-approve  # Apply the full Terraform configuration to provision EC2 instance
 
-      # Step 7: Capture the EC2 public IP from Terraform output
-      - name: Get EC2 Public IP from Terraform
-        id: tf_output
-        run: |
-          cd infrastructure
-          PUBLIC_IP=$(terraform output -raw instance_public_ip)  # Capture EC2 public IP
-          echo "PUBLIC_IP=${PUBLIC_IP}" >> $GITHUB_ENV  # Set the public IP as an environment variable for use in subsequent steps
+    # Step 7: Capture the EC2 public IP from Terraform output
+    - name: Get EC2 Public IP from Terraform
+      id: tf_output
+      run: |
+        cd infrastructure
+        PUBLIC_IP=$(terraform output -raw instance_public_ip)  # Capture EC2 public IP
+        echo "PUBLIC_IP=${PUBLIC_IP}" >> $GITHUB_ENV  # Set the public IP as an environment variable for use in subsequent steps
 
-      # Step 8: Output the EC2 Public IP
-      - name: Display EC2 Public IP
-        run: |
-          echo "EC2 Public IP: $PUBLIC_IP"
+    # Step 8: Output the EC2 Public IP
+    - name: Display EC2 Public IP
+      run: |
+        echo "EC2 Public IP: $PUBLIC_IP"
+
 
 # name: Terraform CI/CD Pipeline
 
