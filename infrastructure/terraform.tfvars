@@ -1,2 +1,3 @@
-key_name         = "travos_terraform_key"
-private_key_path = "/mnt/f/aws_key/travos_terraform_key.pem"
+# terraform.tfvars
+ami_id      = "ami-00f07845aed8c0ee7"  # Example AMI ID for your EC2 instance
+key_name    = "travos_terraform_key"          # The name of your EC2 key pair

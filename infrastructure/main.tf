@@ -1,13 +1,15 @@
+# main.tf
+
 #########################################
 # Remote State Backend Configuration
 #########################################
 terraform {
   backend "s3" {
-    bucket         = "travos-terraform-state-bucket"  # Replace with your globally unique bucket name
+    bucket         = "travos-terraform-state-bucket"  # Ensure this is the same bucket name from bootstrap
     key            = "ec2/terraform.tfstate"
     region         = "eu-central-1"
-    dynamodb_table = "terraform-lock-table"       # Pre-created for state locking
-    encrypt        = true
+    dynamodb_table = "terraform-lock-table"  # Pre-created DynamoDB table for state locking
+    encrypt        = true  # Encrypt the state file in S3
   }
 }
 
@@ -43,7 +45,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
-# (Optional) Attach managed policies or custom inline policies if needed.
 resource "aws_iam_role_policy_attachment" "ec2_basic" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
@@ -52,28 +53,27 @@ resource "aws_iam_role_policy_attachment" "ec2_basic" {
 #########################################
 # Security Group for the EC2 Instance
 #########################################
-resource "aws_security_group" "ec2_sg" {
-  name        = "terraform-ec2-sg"
+resource "aws_security_group" "travos_sg" {
+  name_prefix = "terraform-ec2-sg"
   description = "Security group for the EC2 instance"
   vpc_id      = "vpc-0aef8362527dd3b3a"  # Replace with your VPC ID
 
   ingress {
-    description = "Allow SSH"
+    description = "Allow SSH from specific IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["your-ip-address/32"]  # Replace with your IP address for SSH access
   }
 
   ingress {
-    description = "Allow HTTP"
+    description = "Allow HTTP access"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  # Allow HTTP from anywhere
   }
 
-  # Add additional ingress rules as needed (e.g., for application ports)
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -86,16 +86,16 @@ resource "aws_security_group" "ec2_sg" {
 #########################################
 # EC2 Instance Creation
 #########################################
-resource "aws_instance" "web" {
-  ami           = "ami-00f07845aed8c0ee7"  # Replace with an appropriate AMI for your use case
-  instance_type = "t2.micro"
-  key_name      = var.key_name           # Ensure this variable is defined in variables.tf
+resource "aws_instance" "travos_terraform" {
+  ami           = "ami-00f07845aed8c0ee7"  # Replace with your desired AMI ID (e.g., Amazon Linux 2)
+  instance_type = "t2.micro"  # Free Tier eligible instance type
+  key_name      = var.key_name  # Ensure this variable is defined in your `variables.tf`
 
-  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+  vpc_security_group_ids = [aws_security_group.travos_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
-    Name = "Terraform-EC2-Instance"
+    Name = "Terraform-Travos-Instance"
   }
 }
 
@@ -104,7 +104,7 @@ resource "aws_instance" "web" {
 #########################################
 output "instance_public_ip" {
   description = "The public IP address of the EC2 instance"
-  value       = aws_instance.web.public_ip
+  value       = aws_instance.travos_terraform.public_ip
 }
 
 
