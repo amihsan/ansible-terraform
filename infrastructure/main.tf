@@ -9,11 +9,6 @@ resource "aws_instance" "travos_terraform" {
   }
 }
 
-# Output EC2 public IP
-output "instance_public_ip" {
-  value = aws_instance.travos_terraform.public_ip
-}
-
 
 
 # provider "aws" {
