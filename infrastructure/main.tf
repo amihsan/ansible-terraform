@@ -1,6 +1,3 @@
-provider "aws" {
-  region = "eu-central-1"
-}
 
 # EC2 Instance (as an example resource)
 resource "aws_instance" "travos_terraform" {
