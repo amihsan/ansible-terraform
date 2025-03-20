@@ -63,7 +63,7 @@
         src: "{{ playbook_dir }}/../kubernetes/react-deployment.yml.j2"
         dest: /tmp/react-deployment.yml
       vars:
-        REACT_APP_API_URL: "{{ secrets.REACT_APP_API_URL }}"
+        VITE_API_URL: "{{ secrets.REACT_APP_API_URL }}"
 
     - name: Apply React Deployment
       command: kubectl apply -f /tmp/react-deployment.yml
