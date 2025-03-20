@@ -87,7 +87,7 @@ jobs:
           terraform output
 
       # Step 13: Debug Terraform Output (with cat)
-      - name: Debug Terraform Output
+      - name: Debug Terraform raw testOutput
         run: |
           cd infrastructure
           terraform output -raw instance_public_ip | cat -A
