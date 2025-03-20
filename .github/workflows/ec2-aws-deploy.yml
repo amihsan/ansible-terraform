@@ -120,18 +120,26 @@ jobs:
       - name: Print inventory file for debugging
         run: cat ansible/hosts
 
-      # Step 16: Setup Ansible vault password in github secret
+      # Step 16: Setup Ansible vault password in GitHub Secret
       - name: Set up Ansible Vault password
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_pass
 
-      # Step 17: Create .ssh directory and SSH private key file
-      - name: Create .ssh directory and SSH key file
+      # Step 17: Create .ssh directory and SSH key file
+      - name: Create .ssh directory and setup SSH key
         run: |
-          mkdir -p /home/runner/.ssh
-          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
-          chmod 600 /home/runner/.ssh/id_rsa
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
 
-      # Step 18: Run the Ansible playbook to configure the EC2 instance
+      # Step 18: Debug SSH key setup
+      - name: Verify SSH Key and Test Connection
+        run: |
+          ls -lah ~/.ssh
+          cat ~/.ssh/id_rsa | head -n 5  # Ensure the key exists (remove after debugging)
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@${{ env.PUBLIC_IP }} "echo SSH Connection Successful"
+
+      # Step 19: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts ansible/ec2-aws-playbook.yml --vault-password-file ~/.ansible_vault_pass
