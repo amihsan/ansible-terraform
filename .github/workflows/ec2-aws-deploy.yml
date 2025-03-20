@@ -43,26 +43,25 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Step 6: Build and Push Docker Images
+      # Step 6: Build and push Docker images for the backend and frontend
       - name: Build and Push Docker Images
         run: |
           docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
           docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
           docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
           docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
-
       # Step 7: Install Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.3.0 # Specify your desired Terraform version
 
-      # Step 8: Initialize Terraform (without Backend First)
-      - name: Initialize Terraform (without Backend First)
+      # Step 8: Initialize Terraform (Bootstrap)
+      - name: Initialize Terraform (Bootstrap)
         run: |
           cd infrastructure
           terraform init
-          terraform apply -auto-approve -target=aws_s3_bucket.travos_terraform_state -target=aws_dynamodb_table.travos_terraform_lock
+          terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
 
       # Step 9: Add delay to ensure resources are provisioned
       - name: Wait for Resources to be Provisioned
@@ -73,7 +72,7 @@ jobs:
       - name: Re-initialize Terraform with Remote Backend
         run: |
           cd infrastructure
-          terraform init -reconfigure
+          terraform init
 
       # Step 11: Apply Terraform for EC2 provisioning
       - name: Apply Terraform for EC2 provisioning
