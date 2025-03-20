@@ -86,16 +86,16 @@ jobs:
           cd infrastructure
           terraform output
 
-      # Step 12: Capture the EC2 public IP from Terraform output
+      # Step 13: Capture the EC2 public IP from Terraform output
       - name: Get EC2 Public IP from Terraform
         id: tf_output
         run: |
           cd infrastructure
-          PUBLIC_IP=$(terraform output -raw instance_public_ip)  # Get IP
-          PUBLIC_IP=${PUBLIC_IP//\"/}  # Remove extra quotes
-          echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_ENV"  # Correct syntax for GitHub Actions
+          PUBLIC_IP=$(terraform output instance_public_ip | tr -d ' "')
+          echo "Extracted Public IP: $PUBLIC_IP"  # Debugging
+          echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_ENV"
 
-      # Step 13: Update Ansible Inventory with the EC2 public IP
+      # Step 14: Update Ansible Inventory with the EC2 public IP
       - name: Update Ansible Inventory
         run: |
           # Write the host to the ansible/hosts file
@@ -105,18 +105,18 @@ jobs:
       - name: Print inventory file for debugging
         run: cat ansible/hosts
 
-      # Step 14: Setup Ansible vault password in github secret
+      # Step 15: Setup Ansible vault password in github secret
       - name: Set up Ansible Vault password
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_pass
 
-      # Step 15: Create .ssh directory and SSH private key file
+      # Step 16: Create .ssh directory and SSH private key file
       - name: Create .ssh directory and SSH key file
         run: |
           mkdir -p /home/runner/.ssh
           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
           chmod 600 /home/runner/.ssh/id_rsa
 
-      # Step 16: Run the Ansible playbook to configure the EC2 instance
+      # Step 17: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts ansible/ec2-aws-playbook.yml --vault-password-file ~/.ansible_vault_pass
