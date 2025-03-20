@@ -80,6 +80,11 @@ jobs:
           cd infrastructure
           terraform apply -auto-approve
 
+      - name: Debug Terraform Output
+        run: |
+          cd infrastructure
+          terraform output
+
       # Step 12: Capture the EC2 public IP from Terraform output
       - name: Get EC2 Public IP from Terraform
         id: tf_output
