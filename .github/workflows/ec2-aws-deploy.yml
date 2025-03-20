@@ -146,6 +146,7 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
+############################################################################
 # name: Deploy to EC2
 
 # on:
