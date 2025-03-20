@@ -61,7 +61,7 @@ jobs:
         run: |
           cd infrastructure
           terraform init
-          terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
+          terraform apply -auto-approve -target=aws_s3_bucket.travos_terraform_state -target=aws_dynamodb_table.travos_terraform_lock
 
       # Step 9: Add delay to ensure resources are provisioned
       - name: Wait for Resources to be Provisioned
@@ -85,14 +85,11 @@ jobs:
         id: tf_output
         run: |
           cd infrastructure
-          PUBLIC_IP=$(terraform output -raw instance_public_ip)
-          echo "::set-output name=PUBLIC_IP::$PUBLIC_IP"
-          
+          echo "PUBLIC_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
+
       # Step 13: Update Ansible Inventory with the EC2 public IP
       - name: Update Ansible Inventory
         run: |
-          # Capture the public IP from Terraform output
-          PUBLIC_IP=$(terraform output -raw instance_public_ip)
           # Write the host to the ansible/hosts file
           echo "[app_server]" > ansible/hosts
           echo "$PUBLIC_IP ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
