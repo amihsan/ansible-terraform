@@ -5,8 +5,4 @@ terraform {
     region         = "eu-central-1"
     dynamodb_table = "travo-terraform-lock-table"
   }
-  backend "dynamodb" {
-    table = "travos-terraform-lock-table"
-    region = "eu-central-1"
-  }
 }
