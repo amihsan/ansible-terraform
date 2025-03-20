@@ -91,13 +91,13 @@ jobs:
         run: |
           cd infrastructure
           terraform output -raw instance_public_ip | cat -A
-     
+
       # Step 14: Capture the EC2 public IP from Terraform output
       - name: Get EC2 Public IP from Terraform
         id: tf_output
         run: |
           cd infrastructure
-          PUBLIC_IP=$(terraform output -raw public_ip)
+          PUBLIC_IP=$(terraform output -raw instance_public_ip | tr -d '[:space:]')
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       # Step 15: Update Ansible inventory with the EC2 public IP
