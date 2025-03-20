@@ -98,7 +98,7 @@ jobs:
           cd infrastructure
           PUBLIC_IP=$(terraform output -raw instance_public_ip | tr -d '[:space:]' | grep -oP '\d+\.\d+\.\d+\.\d+')
           echo "Extracted Public IP: $PUBLIC_IP"  # Debugging
-          echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_ENV"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       # Step 14: Update Ansible Inventory with the EC2 public IP
       - name: Update Ansible Inventory
