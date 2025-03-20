@@ -65,7 +65,7 @@ resource "aws_dynamodb_table" "travos_terraform_lock" {
 }
 
 
-
+###########
 # provider "aws" {
 #   region = "eu-central-1"
 # }
