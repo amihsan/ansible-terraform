@@ -91,7 +91,7 @@ jobs:
         id: tf_output
         run: |
           cd infrastructure
-          PUBLIC_IP=$(terraform output instance_public_ip | tr -d ' "')
+          PUBLIC_IP=$(terraform output -raw instance_public_ip | tr -d '\n' | tr -d ' "')  # Strip newlines and quotes
           echo "Extracted Public IP: $PUBLIC_IP"  # Debugging
           echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_ENV"
 
