@@ -4,7 +4,7 @@ provider "aws" {
 
 # S3 Bucket for Terraform State
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "my-terraform-state-bucket"
+  bucket = "travos-terraform-state-bucket"
 
   lifecycle {
     prevent_destroy = true
@@ -55,7 +55,7 @@ resource "aws_dynamodb_table" "terraform_lock" {
 # Terraform Backend Configuration (Applied After First Run)
 terraform {
   backend "s3" {
-    bucket         = "my-terraform-state-bucket"
+    bucket         = "travos-terraform-state-bucket"
     key            = "ec2/terraform.tfstate"
     region         = "eu-central-1"  # Ensure region matches your provider
     use_lockfile   = true           # Use lockfile instead of dynamodb_table
