@@ -32,7 +32,7 @@ jobs:
           docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
 
-  setup-iam:
+  terraform:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -45,45 +45,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Ensure IAM Role Exists
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init for IAM
         run: |
-          # Set up role and policy
-          ROLE_NAME="GitHubActionsTerraformRole"
-          POLICY_NAME="GitHubTerraformPolicy"
+          cd terraform
+          terraform init -backend=false # Initialize Terraform without backend
 
-          # Create IAM Role
-          aws iam create-role \
-            --role-name $ROLE_NAME \
-            --assume-role-policy-document file://assume-role-policy.json
-
-          # Create policy for the role
-          aws iam create-policy \
-            --policy-name $POLICY_NAME \
-            --policy-document file://policy-document.json
-
-          # Attach policy to the role
-          aws iam attach-role-policy \
-            --role-name $ROLE_NAME \
-            --policy-arn arn:aws:iam::aws:policy/$POLICY_NAME
-
-          echo "IAM Role $ROLE_NAME created and policy attached."
-
-  terraform:
-    runs-on: ubuntu-latest
-    needs: setup-iam
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Terraform Apply IAM Role
+        run: |
+          cd terraform
+          terraform apply -auto-approve -target=module.iam
 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsTerraformRole
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
 
       - name: Ensure S3 Bucket for Terraform State Exists
         run: |
@@ -96,10 +77,27 @@ jobs:
             }'
           fi
 
+      - name: Terraform Init for IAM
+        run: |
+          cd terraform
+          terraform init -backend=false # Initialize Terraform without backend
+
+      - name: Terraform Apply IAM Role
+        run: |
+          cd terraform
+          terraform apply -auto-approve -target=module.iam
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsTerraformRole
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Terraform Init with Remote Backend
         run: |
           cd terraform
-          terraform init 
+          terraform init -reconfigure
+
       - name: Terraform Apply
         run: |
           cd terraform
