@@ -2,13 +2,9 @@ provider "aws" {
   region = "eu-central-1"  # Ensure the provider region matches your S3 bucket
 }
 
-# S3 Bucket for Terraform State
+# Reference the existing S3 bucket (no creation)
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "travos-terraform-state-bucket"
-
-  lifecycle {
-    prevent_destroy = true
-  }
+  bucket = "travos-terraform-state-bucket"  # Using the existing bucket
 }
 
 # Enable S3 Versioning (Required for state rollback)
@@ -40,7 +36,7 @@ resource "aws_s3_bucket_public_access_block" "block_public_access" {
   restrict_public_buckets = true
 }
 
-# DynamoDB Table for State Locking (Only if you're using DynamoDB for state locking)
+# DynamoDB Table for State Locking
 resource "aws_dynamodb_table" "terraform_lock" {
   name         = "terraform-lock"
   billing_mode = "PAY_PER_REQUEST"
@@ -55,11 +51,12 @@ resource "aws_dynamodb_table" "terraform_lock" {
 # Terraform Backend Configuration (Applied After First Run)
 terraform {
   backend "s3" {
-    bucket         = "travos-terraform-state-bucket"
-    key            = "ec2/terraform.tfstate"
+    bucket         = "travos-terraform-state-bucket"  # The existing bucket name
+    key            = "ec2/terraform.tfstate"  # Path to store the state file
     region         = "eu-central-1"  # Ensure region matches your provider
-    use_lockfile   = true           # Use lockfile instead of dynamodb_table
-    encrypt        = true
+    use_lockfile   = true           # Use lockfile for state locking
+    encrypt        = true           # Enable encryption for state
+    dynamodb_table = "terraform-lock"  # DynamoDB table for state locking
   }
 }
 
@@ -76,7 +73,7 @@ resource "aws_instance" "my_ec2" {
   }
 }
 
-# Security Group for EC2 ##
+# Security Group for EC2
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2-security-group"
   description = "Allow SSH and HTTP"
