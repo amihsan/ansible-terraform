@@ -28,6 +28,10 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: Clean Up Previous Terraform State
+        run: |
+          rm -rf .terraform
+
       - name: Terraform Init (with local backend initially)
         run: |
           cd terraform  # REMOVE this if your Terraform files are in the root directory
