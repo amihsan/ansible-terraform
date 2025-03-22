@@ -36,7 +36,7 @@ resource "aws_security_group" "travos_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["<your_ip>/32"]  # Replace <your_ip> with your actual IP address for SSH security
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
   ingress {
