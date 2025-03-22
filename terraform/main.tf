@@ -14,7 +14,7 @@ terraform {
 }
 
 # EC2 Instance Creation
-resource "aws_instance" "my_ec2" {
+resource "aws_instance" "travos_terraform" {
   ami           = "ami-03074cc1b166e8691"  # Update with the correct AMI for your region
   instance_type = "t2.micro"
   key_name      = "travos_terraform_key"  # Ensure the key pair exists
@@ -22,14 +22,14 @@ resource "aws_instance" "my_ec2" {
   security_groups = [aws_security_group.travos_sg.name]
 
   tags = {
-    Name = "MyTerraformEC2"
+    Name = "TravosInstance"
   }
 }
 
 # Security Group for EC2
 resource "aws_security_group" "travos_sg" {
-  name        = "ec2-security-group"
-  description = "Allow SSH and HTTP"
+  name        = "travos_sg"
+  description = "Allow inbound traffic on port 22 for SSH and port 80 for HTTP"
 
   ingress {
     from_port   = 22
