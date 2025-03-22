@@ -1,17 +1,21 @@
 .footer {
-    background-color: #008080; /* Dark Teal color */
-    color: #fff;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    font-size: large;
-
+  background-color: #008080; /* Dark Teal color */
+  color: #fff;
+  padding: 30px 20px; /* Top-bottom padding slightly increased for better balance */
+  text-align: center;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  font-size: 1rem; /* Slightly larger text for better readability */
+  font-family: "Arial", sans-serif; /* Clean, professional font */
+  margin-top: 40px; /* Adds space between footer and content above */
 }
 
+.footer p {
+  margin: 0; /* Ensures no extra space between paragraphs */
+}
 
 @media (max-width: 768px) {
-
-    .footer p {
-        font-size: 0.8rem;
-    }
+  .footer {
+    padding: 20px; /* Adjusts padding for smaller screens */
+    font-size: 0.8rem; /* Slightly smaller text on mobile */
+  }
 }
