@@ -83,16 +83,18 @@ jobs:
           set -eux
           rm -rf terraform/.terraform
 
-      # Step 10: Terraform Init (with local backend initially)
+      # Step 7: Terraform Init (with local backend initially)
       - name: Terraform Init (with local backend initially)
         run: |
           set -eux
           cd terraform
-          if [ ! -d ".terraform" ]; then
-            terraform init -backend=false  # Initialize without backend on first run
-          else
-            terraform init -reconfigure  # Reinitialize with remote backend after first apply
-          fi
+          terraform init -backend=false
+      # Step 8: Terraform Init (with remote backend, reconfigure)
+      - name: Terraform Init (with remote backend, reconfigure)
+        run: |
+          set -eux
+          cd terraform
+          terraform init -reconfigure
 
       # Step 11: Terraform Plan
       - name: Terraform Plan
