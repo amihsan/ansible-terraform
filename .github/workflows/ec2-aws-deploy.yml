@@ -10,6 +10,23 @@ permissions:
   contents: read
 
 jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Images
+        run: |
+          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
+          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
+
   setup-iam:
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +46,7 @@ jobs:
       - name: Terraform Init for IAM
         run: |
           cd terraform
-          terraform init
+          terraform init -backend=false # Initialize Terraform without backend
 
       - name: Terraform Apply IAM Role
         run: |
@@ -55,7 +72,7 @@ jobs:
 
       - name: Ensure S3 Bucket for Terraform State Exists
         run: |
-          BUCKET="travos-terraform-state-bucket"
+          BUCKET="${{ secrets.AWS_S3_BUCKET }}"
           if ! aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
             aws s3api create-bucket --bucket "$BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
             aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
