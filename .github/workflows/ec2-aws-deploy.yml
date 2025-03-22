@@ -28,10 +28,10 @@ jobs:
         with:
           terraform_version: latest
 
-      - name: Terraform Init
+      - name: Terraform Init (with local backend initially)
         run: |
           cd terraform  # REMOVE this if your Terraform files are in the root directory
-          terraform init || (echo "Reinitializing Terraform..." && rm -rf .terraform && terraform init)
+          terraform init -backend=false  # Initialize without backend on first run
 
       - name: Terraform Plan
         run: |
@@ -42,6 +42,16 @@ jobs:
         run: |
           cd terraform  # REMOVE this if your Terraform files are in the root directory
           terraform apply -auto-approve tfplan
+
+      - name: Terraform Init (with remote backend)
+        run: |
+          cd terraform  # REMOVE this if your Terraform files are in the root directory
+          terraform init  # Reinitialize with remote backend (S3 + DynamoDB) after resources are created
+
+      - name: Terraform Apply (after reinitializing with remote backend)
+        run: |
+          cd terraform  # REMOVE this if your Terraform files are in the root directory
+          terraform apply -auto-approve
 
 #################
 # name: Deploy to EC2 with Terraform and Ansible
