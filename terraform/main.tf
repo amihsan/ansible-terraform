@@ -10,7 +10,7 @@ terraform {
     region         = "eu-central-1"
     use_lockfile   = true  # Enable lockfile for state locking
     encrypt        = true  # Enable encryption for state
-    dynamodb_table = "terraform-lock"  # DynamoDB table for state locking
+    dynamodb_table = "travos-terraform-lock"  # DynamoDB table for state locking
   }
 }
 
