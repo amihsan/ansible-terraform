@@ -239,9 +239,8 @@ After setting up the OIDC provider, create an IAM role that GitHub Actions can a
   ```ruby
   arn:aws:iam::123456789012:role/GitHubActionsTerraformRole
   ```
-  Replace:
 
-123456789012 → Your AWS Account ID
+Replace `123456789012` with your AWS account ID.
 
 #### Step 3: Add a Trust Policy to the IAM Role
 
