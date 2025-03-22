@@ -55,7 +55,7 @@ jobs:
       # Step 5: Create DynamoDB Table for Locking (if not exists)
       - name: Create DynamoDB Table for Terraform Locking
         run: |
-          TABLE_EXISTS=$(aws dynamodb describe-table --table-name terraform-lock 2>&1 || echo "not found")
+          TABLE_EXISTS=$(aws dynamodb describe-table --table-name travos-terraform-lock 2>&1 || echo "not found")
           if [[ "$TABLE_EXISTS" == *"Not Found"* ]]; then
             echo "DynamoDB table doesn't exist, creating now..."
             aws dynamodb create-table \
