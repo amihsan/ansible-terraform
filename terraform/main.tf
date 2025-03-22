@@ -76,7 +76,7 @@ resource "aws_instance" "my_ec2" {
   }
 }
 
-# Security Group for EC2
+# Security Group for EC2 ##
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2-security-group"
   description = "Allow SSH and HTTP"
