@@ -31,35 +31,25 @@ jobs:
         with:
           terraform_version: latest
 
-      # Step 4: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
-      - name: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
+      # Step 4: Create S3 Bucket for Terraform State if it doesn't exist
+      - name: Create S3 Bucket for Terraform State (if not exists)
         run: |
           BUCKET_EXISTS=$(aws s3api head-bucket --bucket travos-terraform-state-bucket 2>&1 || echo "not found")
-          if [[ "$BUCKET_EXISTS" == *"Not Found"* ]]; then
+          if [[ "$BUCKET_EXISTS" == *"not found"* ]]; then
             echo "Bucket doesn't exist, creating now..."
             aws s3api create-bucket --bucket travos-terraform-state-bucket --region eu-central-1 --create-bucket-configuration LocationConstraint=eu-central-1
-            # Enable versioning
-            aws s3api put-bucket-versioning --bucket travos-terraform-state-bucket --versioning-configuration Status=Enabled
-            # Enable encryption
-            aws s3api put-bucket-encryption --bucket travos-terraform-state-bucket --server-side-encryption-configuration '{
-              "Rules": [{
-                "ApplyServerSideEncryptionByDefault": {
-                  "SSEAlgorithm": "AES256"
-                }
-              }]
-            }'
           else
             echo "Bucket already exists, skipping creation."
           fi
 
-      # Step 5: Create DynamoDB Table for Locking (if not exists)
-      - name: Create DynamoDB Table for Terraform Locking
+      # Step 5: Create DynamoDB Table for Locking if it doesn't exist
+      - name: Create DynamoDB Table for Terraform Locking (if not exists)
         run: |
-          TABLE_EXISTS=$(aws dynamodb describe-table --table-name travos-terraform-lock 2>&1 || echo "not found")
-          if [[ "$TABLE_EXISTS" == *"Not Found"* ]]; then
+          TABLE_EXISTS=$(aws dynamodb describe-table --table-name terraform-lock 2>&1 || echo "not found")
+          if [[ "$TABLE_EXISTS" == *"not found"* ]]; then
             echo "DynamoDB table doesn't exist, creating now..."
             aws dynamodb create-table \
-              --table-name travos-terraform-lock \
+              --table-name terraform-lock \
               --attribute-definitions AttributeName=LockID,AttributeType=S \
               --key-schema AttributeName=LockID,KeyType=HASH \
               --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
@@ -68,10 +58,12 @@ jobs:
             echo "DynamoDB table already exists, skipping creation."
           fi
 
-      # Step 6: Cleanup local state (for the first run)
-      - name: Cleanup local state
+      # Step 6: Clean Up Previous Terraform State
+      - name: Clean Up Previous Terraform State
         run: |
-          rm -rf terraform/.terraform
+          rm -rf .terraform
+          rm -rf terraform.tfstate
+          rm -rf terraform.tfstate.backup
 
       # Step 7: Terraform Init (with local backend initially)
       - name: Terraform Init (with local backend initially)
