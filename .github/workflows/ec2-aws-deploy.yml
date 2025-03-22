@@ -6,9 +6,9 @@ on:
       - main
 
 permissions:
-  id-token: write
-  contents: read
-
+  id-token: write    # Grants permission to write ID token for OIDC authentication
+  contents: read     # Grants read access to repository contents (files and code)
+  
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -89,6 +89,7 @@ jobs:
           set -eux
           cd terraform
           terraform init -backend=false
+
       # Step 11: Terraform Init (with remote backend, reconfigure)
       - name: Terraform Init (with remote backend, reconfigure)
         run: |
@@ -163,5 +164,5 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
-################################################
+
 
