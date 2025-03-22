@@ -51,7 +51,7 @@ jobs:
       - name: Terraform Apply IAM Role
         run: |
           cd terraform
-          terraform apply -auto-approve -target=iam  # Apply IAM resources only
+          terraform apply -auto-approve -target=aws_iam_role.github_actions_role -target=aws_iam_policy.github_terraform_policy -target=aws_iam_policy_attachment.github_terraform
 
   terraform:
     runs-on: ubuntu-latest
