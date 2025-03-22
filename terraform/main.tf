@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-central-1"
+  region = "eu-central-1"  # Ensure the provider region matches your S3 bucket
 }
 
 # S3 Bucket for Terraform State
@@ -40,7 +40,7 @@ resource "aws_s3_bucket_public_access_block" "block_public_access" {
   restrict_public_buckets = true
 }
 
-# DynamoDB Table for State Locking
+# DynamoDB Table for State Locking (Only if you're using DynamoDB for state locking)
 resource "aws_dynamodb_table" "terraform_lock" {
   name         = "terraform-lock"
   billing_mode = "PAY_PER_REQUEST"
@@ -57,17 +57,17 @@ terraform {
   backend "s3" {
     bucket         = "my-terraform-state-bucket"
     key            = "ec2/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-lock"
+    region         = "eu-central-1"  # Ensure region matches your provider
+    use_lockfile   = true           # Use lockfile instead of dynamodb_table
     encrypt        = true
   }
 }
 
 # EC2 Instance
 resource "aws_instance" "my_ec2" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Update to your region's AMI
+  ami           = "ami-03074cc1b166e8691"  # Update to your region's AMI
   instance_type = "t2.micro"
-  key_name      = "my-key"  # Ensure the key pair exists
+  key_name      = "travos_terraform_key"  # Ensure the key pair exists
 
   security_groups = [aws_security_group.ec2_sg.name]
 
