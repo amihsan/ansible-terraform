@@ -6,163 +6,280 @@ on:
       - main
 
 permissions:
-  id-token: write    # Grants permission to write ID token for OIDC authentication
-  contents: read     # Grants read access to repository contents (files and code)
-  
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
+  id-token: write
+  contents: read
 
+jobs:
+  setup-iam:
+    runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Configure AWS Credentials
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (using stored secrets)
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::597088026267:role/GitHubActionsTerraformRole
-          aws-region: eu-central-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Set up Python for Ansible
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init for IAM
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Apply IAM Role
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+  terraform:
+    runs-on: ubuntu-latest
+    needs: setup-iam
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsTerraformRole
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Ensure S3 Bucket for Terraform State Exists
+        run: |
+          BUCKET="travos-terraform-state-bucket"
+          if ! aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            aws s3api create-bucket --bucket "$BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
+            aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
+            aws s3api put-bucket-encryption --bucket "$BUCKET" --server-side-encryption-configuration '{
+              "Rules": [{ "ApplyServerSideEncryptionByDefault": { "SSEAlgorithm": "AES256" }}]
+            }'
+          fi
+
+      - name: Terraform Init with Remote Backend
+        run: |
+          cd terraform
+          terraform init -reconfigure
+
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+      - name: Get EC2 Public IP from Terraform
+        id: tf_output
+        run: |
+          cd terraform
+          PUBLIC_IP=$(terraform output -raw instance_public_ip)
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+  ansible:
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
           python-version: "3.x"
 
-      # Step 4: Install Ansible dependencies
-      - name: Install dependencies
+      - name: Install Ansible
         run: |
           pip install ansible
 
-      # Step 5: Login to Dockerhub
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Step 6: Build and push Docker images for the backend and frontend
-      - name: Build and Push Docker Images
-        run: |
-          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
-          docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
-          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
-          docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
-
-      # Step 7: Setup Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: latest
-
-      # Step 8: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
-      - name: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
-        run: |
-          set -eux
-          BUCKET_EXISTS=$(aws s3api head-bucket --bucket travos-terraform-state-bucket 2>&1 || echo "not found")
-          if [[ "$BUCKET_EXISTS" == *"Not Found"* ]]; then
-            echo "Bucket doesn't exist, creating now..."
-            aws s3api create-bucket --bucket travos-terraform-state-bucket --region eu-central-1 --create-bucket-configuration LocationConstraint=eu-central-1
-            aws s3api put-bucket-versioning --bucket travos-terraform-state-bucket --versioning-configuration Status=Enabled
-            aws s3api put-bucket-encryption --bucket travos-terraform-state-bucket --server-side-encryption-configuration '{
-              "Rules": [{
-                "ApplyServerSideEncryptionByDefault": {
-                  "SSEAlgorithm": "AES256"
-                }
-              }] 
-            }'
-          else
-            echo "Bucket already exists, skipping creation."
-          fi
-
-      # Step 9: Cleanup local state (for the first run)
-      - name: Cleanup local state
-        run: |
-          set -eux
-          rm -rf terraform/.terraform
-
-      # Step 10: Terraform Init (with local backend initially)
-      - name: Terraform Init (with local backend initially)
-        run: |
-          set -eux
-          cd terraform
-          terraform init -backend=false
-
-      # Step 11: Terraform Init (with remote backend, reconfigure)
-      - name: Terraform Init (with remote backend, reconfigure)
-        run: |
-          set -eux
-          cd terraform
-          terraform init -reconfigure
-
-      # Step 12: Terraform Plan
-      - name: Terraform Plan
-        run: |
-          set -eux
-          cd terraform
-          terraform plan -out=tfplan
-
-      # Step 13: Terraform Apply
-      - name: Terraform Apply
-        run: |
-          set -eux
-          cd terraform
-          terraform apply -auto-approve tfplan
-
-      # Step 14: Debug Terraform Output (Ec2 Public IP)
-      - name: Debug Terraform Output
-        run: |
-          cd terraform
-          terraform output
-
-      # Step 15: Capture the EC2 public IP from Terraform and store in GitHub environment variable.
-      - name: Get EC2 Public IP from Terraform
-        id: tf_output
-        run: |
-          cd terraform
-          PUBLIC_IP=$(terraform output -raw instance_public_ip | tr -d '[:space:]' | grep -oP '\d+\.\d+\.\d+\.\d+' | head -n 1)
-          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-          echo "Extracted PUBLIC_IP: $PUBLIC_IP"
-
-      # Step 16: Update Ansible inventory with the EC2 public IP
       - name: Update Ansible Inventory
         run: |
           echo "[app_server]" > ansible/hosts
-          echo "$PUBLIC_IP ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
-        env:
-          PUBLIC_IP: ${{ env.PUBLIC_IP }}
+          echo "${{ env.PUBLIC_IP }} ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
 
-      # Step 17: Debug inventory file for Ansible
-      - name: Print inventory file for debugging
-        run: cat ansible/hosts
-
-      # Step 18: Setup Ansible vault password in GitHub Secret
-      - name: Set up Ansible Vault password
-        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_pass
-
-      # Step 19: Create .ssh directory and SSH key file
-      - name: Create .ssh directory and setup SSH key
+      - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
 
-      # Step 20: Debug SSH key setup
-      - name: Verify SSH Key and Test Connection
-        run: |
-          ls -lah ~/.ssh
-          cat ~/.ssh/id_rsa | head -n 5  # Ensure the key exists (remove after debugging)
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@${{ env.PUBLIC_IP }} "echo SSH Connection Successful"
-
-      # Step 21: Run the Ansible playbook to configure the EC2 instance
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i ansible/hosts ansible/ec2-aws-playbook.yml --vault-password-file ~/.ansible_vault_pass
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
-          ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
+############################################
+# name: Deploy to EC2 with Terraform and Ansible
 
+# on:
+#   push:
+#     branches:
+#       - main
+
+# permissions:
+#   id-token: write    # Grants permission to write ID token for OIDC authentication
+#   contents: read     # Grants read access to repository contents (files and code)
+
+# jobs:
+#   terraform:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # Step 1: Checkout Repository
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       # Step 2: Configure AWS Credentials
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           role-to-assume: arn:aws:iam::597088026267:role/GitHubActionsTerraformRole
+#           aws-region: eu-central-1
+
+#       # Step 3: Set up Python for Ansible
+#       - name: Set up Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: "3.x"
+
+#       # Step 4: Install Ansible dependencies
+#       - name: Install dependencies
+#         run: |
+#           pip install ansible
+
+#       # Step 5: Login to Dockerhub
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v1
+#         with:
+#           username: ${{ secrets.DOCKER_USERNAME }}
+#           password: ${{ secrets.DOCKER_PASSWORD }}
+
+#       # Step 6: Build and push Docker images for the backend and frontend
+#       - name: Build and Push Docker Images
+#         run: |
+#           docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest ./backend
+#           docker push ${{ secrets.DOCKER_USERNAME }}/flask-terraform-backend:latest
+#           docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest ./frontend
+#           docker push ${{ secrets.DOCKER_USERNAME }}/react-terraform-frontend:latest
+
+#       # Step 7: Setup Terraform
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: latest
+
+#       # Step 8: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
+#       - name: Create S3 Bucket for Terraform State with Versioning and Encryption (if not exists)
+#         run: |
+#           set -eux
+#           BUCKET_EXISTS=$(aws s3api head-bucket --bucket travos-terraform-state-bucket 2>&1 || echo "not found")
+#           if [[ "$BUCKET_EXISTS" == *"Not Found"* ]]; then
+#             echo "Bucket doesn't exist, creating now..."
+#             aws s3api create-bucket --bucket travos-terraform-state-bucket --region eu-central-1 --create-bucket-configuration LocationConstraint=eu-central-1
+#             aws s3api put-bucket-versioning --bucket travos-terraform-state-bucket --versioning-configuration Status=Enabled
+#             aws s3api put-bucket-encryption --bucket travos-terraform-state-bucket --server-side-encryption-configuration '{
+#               "Rules": [{
+#                 "ApplyServerSideEncryptionByDefault": {
+#                   "SSEAlgorithm": "AES256"
+#                 }
+#               }]
+#             }'
+#           else
+#             echo "Bucket already exists, skipping creation."
+#           fi
+
+#       # Step 9: Cleanup local state (for the first run)
+#       - name: Cleanup local state
+#         run: |
+#           set -eux
+#           rm -rf terraform/.terraform
+
+#       # Step 10: Terraform Init (with local backend initially)
+#       - name: Terraform Init (with local backend initially)
+#         run: |
+#           set -eux
+#           cd terraform
+#           terraform init -backend=false
+
+#       # Step 11: Terraform Init (with remote backend, reconfigure)
+#       - name: Terraform Init (with remote backend, reconfigure)
+#         run: |
+#           set -eux
+#           cd terraform
+#           terraform init -reconfigure
+
+#       # Step 12: Terraform Plan
+#       - name: Terraform Plan
+#         run: |
+#           set -eux
+#           cd terraform
+#           terraform plan -out=tfplan
+
+#       # Step 13: Terraform Apply
+#       - name: Terraform Apply
+#         run: |
+#           set -eux
+#           cd terraform
+#           terraform apply -auto-approve tfplan
+
+#       # Step 14: Debug Terraform Output (Ec2 Public IP)
+#       - name: Debug Terraform Output
+#         run: |
+#           cd terraform
+#           terraform output
+
+#       # Step 15: Capture the EC2 public IP from Terraform and store in GitHub environment variable.
+#       - name: Get EC2 Public IP from Terraform
+#         id: tf_output
+#         run: |
+#           cd terraform
+#           PUBLIC_IP=$(terraform output -raw instance_public_ip | tr -d '[:space:]' | grep -oP '\d+\.\d+\.\d+\.\d+' | head -n 1)
+#           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+#           echo "Extracted PUBLIC_IP: $PUBLIC_IP"
+
+#       # Step 16: Update Ansible inventory with the EC2 public IP
+#       - name: Update Ansible Inventory
+#         run: |
+#           echo "[app_server]" > ansible/hosts
+#           echo "$PUBLIC_IP ansible_ssh_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" >> ansible/hosts
+#         env:
+#           PUBLIC_IP: ${{ env.PUBLIC_IP }}
+
+#       # Step 17: Debug inventory file for Ansible
+#       - name: Print inventory file for debugging
+#         run: cat ansible/hosts
+
+#       # Step 18: Setup Ansible vault password in GitHub Secret
+#       - name: Set up Ansible Vault password
+#         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_pass
+
+#       # Step 19: Create .ssh directory and SSH key file
+#       - name: Create .ssh directory and setup SSH key
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
+
+#       # Step 20: Debug SSH key setup
+#       - name: Verify SSH Key and Test Connection
+#         run: |
+#           ls -lah ~/.ssh
+#           cat ~/.ssh/id_rsa | head -n 5  # Ensure the key exists (remove after debugging)
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@${{ env.PUBLIC_IP }} "echo SSH Connection Successful"
+
+#       # Step 21: Run the Ansible playbook to configure the EC2 instance
+#       - name: Run Ansible Playbook
+#         run: |
+#           ansible-playbook -i ansible/hosts ansible/ec2-aws-playbook.yml --vault-password-file ~/.ansible_vault_pass
+#         env:
+#           ANSIBLE_HOST_KEY_CHECKING: "false"
+#           ANSIBLE_PRIVATE_KEY_FILE: /home/runner/.ssh/id_rsa
 
