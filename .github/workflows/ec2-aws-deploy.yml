@@ -31,6 +31,8 @@ jobs:
       - name: Clean Up Previous Terraform State
         run: |
           rm -rf .terraform
+          rm -rf terraform.tfstate
+          rm -rf terraform.tfstate.backup
 
       - name: Terraform Init (with local backend initially)
         run: |
