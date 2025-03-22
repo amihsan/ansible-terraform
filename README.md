@@ -290,7 +290,7 @@ Click Update Policy ✅
 Finally, update your GitHub Actions workflow to use the new IAM role for authentication.
 
 1- **Update the Workflow Configuration**  
- In your GitHub repository, edit the `.github/workflows/terraform.yml` file.
+ In your GitHub repository, edit the `.github/workflows/ec2-aws-deploy.yml` file.
 
 - **Configure AWS Credentials**  
    Add or update the following step to configure AWS credentials using the IAM role you just created:
