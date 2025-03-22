@@ -1,6 +1,6 @@
-# provider "aws" {
-#   region = "${var.aws_region}"
-# }
+provider "aws" {
+  region = "${var.aws_region}"
+}
 
 # Terraform Backend Configuration (After S3 and DynamoDB are created)
 terraform {
