@@ -1,13 +1,13 @@
 provider "aws" {
-  region = "${var.aws_region}"
+  region = var.aws_region
 }
 
 # Terraform Backend Configuration (After S3 and DynamoDB are created)
 terraform {
   backend "s3" {
-    bucket         = "${var.aws_s3_bucket}"  # The existing bucket name
+    bucket         = var.aws_s3_bucket  # The existing bucket name
     key            = "state/terraform.tfstate"  # Path to store the state file
-    region         = "${var.aws_region}"  # Ensure region matches your provider
+    region         = var.aws_region  # Ensure region matches your provider
     use_lockfile   = true  # Enable lockfile for state locking
     encrypt        = true  # Enable encryption for state
   }
