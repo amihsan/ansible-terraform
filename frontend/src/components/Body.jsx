@@ -116,7 +116,7 @@ const Body = () => {
     <main className={styles.main}>
       <div className={styles.textDiv}>
         <h2>
-          TRAVOS: A Probabilistic Model to Evaluate Trust in the Redecentralized
+          Travos: A Probabilistic Model to Evaluate Trust in the Redecentralized
           Web
         </h2>
         <div className={styles.howItWorks}>

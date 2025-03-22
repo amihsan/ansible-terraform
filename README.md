@@ -241,8 +241,7 @@ After setting up the OIDC provider, create an IAM role that GitHub Actions can a
 8. **Attach Permissions**
 
    - Attach the following permissions:
-     - **AmazonS3FullAccess** (for Terraform backend in S3)
-     - **AmazonDynamoDBFullAccess** (for state locking)
+     - **AmazonS3FullAccess** (for Terraform remote backend in S3)
      - **AmazonEC2FullAccess** (or custom EC2 permissions)
 
 9. **Complete the Role Creation**
