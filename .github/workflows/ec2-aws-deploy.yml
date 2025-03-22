@@ -43,10 +43,10 @@ jobs:
           cd terraform  # REMOVE this if your Terraform files are in the root directory
           terraform apply -auto-approve tfplan
 
-      - name: Terraform Init (with remote backend)
+      - name: Terraform Init (with remote backend, reconfigure)
         run: |
           cd terraform  # REMOVE this if your Terraform files are in the root directory
-          terraform init  # Reinitialize with remote backend (S3 + DynamoDB) after resources are created
+          terraform init -reconfigure  # Reinitialize with remote backend after first apply
 
       - name: Terraform Apply (after reinitializing with remote backend)
         run: |
