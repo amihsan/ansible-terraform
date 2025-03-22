@@ -8,38 +8,31 @@
     - name: Gather EC2 instance metadata
       ec2_metadata_facts:
 
-    - name: Ensure Python 3 is installed (Debian/Ubuntu)
-      apt:
-        name: python3
-        state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
+    # - name: Ensure Python 3 is installed (Debian/Ubuntu)
+    #   apt:
+    #     name: python3
+    #     state: present
+    #     update_cache: yes
+    #   when: ansible_facts['os_family'] == "Debian" or ansible_facts['os_family'] == "Ubuntu"
 
-    - name: Ensure Python 3 is installed (RHEL/CentOS)
+    - name: Ensure Python 3 is installed on Amazon Linux or RHEL/CentOS
       yum:
         name: python3
         state: present
-      when: ansible_facts['os_family'] == "RedHat"
+      when: ansible_facts['distribution'] == "Amazon" or ansible_facts['os_family'] == "RedHat"
 
-    - name: Install python3-apt (Debian/Ubuntu)
-      apt:
-        name: python3-apt
-        state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
+    # - name: Install Docker if not already installed (Debian/Ubuntu)
+    #   apt:
+    #     name: docker.io
+    #     state: present
+    #     update_cache: yes
+    #   when: ansible_facts['os_family'] == "Debian" or ansible_facts['os_family'] == "Ubuntu"
 
-    - name: Install Docker if not already installed (Debian/Ubuntu)
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-      when: ansible_facts['os_family'] == "Debian"
-
-    - name: Install Docker if not already installed (RHEL/CentOS)
+    - name: Install Docker if not already installed Amazon Linux or RHEL/CentOS
       yum:
         name: docker
         state: present
-      when: ansible_facts['os_family'] == "RedHat"
+      when: ansible_facts['distribution'] == "Amazon" or ansible_facts['os_family'] == "RedHat"
 
     - name: Ensure Docker service is running
       service:
