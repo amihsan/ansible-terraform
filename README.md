@@ -176,7 +176,153 @@ For continuous deployment via GitHub Actions, the following GitHub secrets must 
 
 You can set these in the repository by navigating to **Settings > Secrets > Actions**.
 
-### Deployment Steps
+---
+
+### 🛠️ Setting Up GitHub OIDC Provider and IAM Role in AWS
+
+This guide explains how to set up a GitHub OpenID Connect (OIDC) provider in AWS, create an IAM role for GitHub Actions, and configure specific access to GitHub organizations, repositories, and branches for seamless authentication from GitHub Actions to AWS.
+
+#### Step 1: Add GitHub OIDC Provider in AWS
+
+1. **Go to AWS IAM Console**
+   - Open the [AWS IAM Console](https://console.aws.amazon.com/iam/).
+2. **Navigate to Identity Providers**
+
+   - In the left sidebar, click on **Identity Providers** under the **Access Management** section.
+
+3. **Add a New Identity Provider**
+
+   - Click on the **Add Provider** button.
+
+4. **Select Provider Type**
+
+   - Choose **OpenID Connect** as the provider type.
+
+5. **Enter Provider Details**
+
+   - **Provider URL**: `https://token.actions.githubusercontent.com`
+   - **Audience**: `sts.amazonaws.com`
+
+6. **Save the Provider**
+   - Click on **Add Provider** to finalize the process.
+
+Now, GitHub Actions can use this OIDC provider to authenticate securely with AWS.
+
+#### Step 2: Create IAM Role (GitHubActionsTerraformRole)
+
+After setting up the OIDC provider, create an IAM role that GitHub Actions can assume for AWS access.
+
+1. **Go to AWS IAM Console**
+   - Open the [AWS IAM Console](https://console.aws.amazon.com/iam/).
+2. **Navigate to Roles**
+
+   - In the left sidebar, click on **Roles**.
+
+3. **Create a New Role**
+
+   - Click on the **Create Role** button.
+
+4. **Set Trusted Entity Type**
+   - Choose **Web identity** as the trusted entity type.
+5. **Select Identity Provider**
+
+   - Select **token.actions.githubusercontent.com** as the identity provider.
+
+6. **Set Audience**
+
+   - Choose **sts.amazonaws.com** as the audience.
+
+7. **Set GitHub organization**
+
+   - If you're using an organization, enter its name (e.g., my-org).
+
+   - If you're using a personal account, enter your GitHub username (e.g., my-username).
+
+8. **Attach Permissions**
+
+   - Attach the following permissions:
+     - **AmazonS3FullAccess** (for Terraform backend in S3)
+     - **AmazonDynamoDBFullAccess** (for state locking)
+     - **AmazonEC2FullAccess** (or custom EC2 permissions)
+
+9. **Complete the Role Creation**
+
+   - Click **Next**, review the configuration, and click **Create Role**.
+
+10. **Copy the Role ARN**
+    - Copy the Role ARN, which is needed for the GitHub Actions workflow:
+    ```ruby
+    arn:aws:iam::123456789012:role/GitHubActionsTerraformRole
+    ```
+    Replace:
+
+123456789012 → Your AWS Account ID
+
+#### Step 3: Add a Trust Policy to the IAM Role
+
+1. **Navigate to the Role**  
+   In the AWS IAM console, go to **Roles** and select the `GitHubActionsTerraformRole`.
+
+2. **Edit the Trust Policy**  
+   Under the **Trust relationships** tab, click **Edit trust policy**.
+
+3. **Update the Trust Policy**  
+   Replace the existing policy with the following JSON, making sure to replace the placeholders with your own AWS account ID and GitHub repository information:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {
+           "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+         },
+         "Action": "sts:AssumeRoleWithWebIdentity",
+         "Condition": {
+           "StringEquals": {
+             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+           },
+           "StringLike": {
+             "token.actions.githubusercontent.com:sub": "repo:your-github-org-or-username/your-repo:*"
+           }
+         }
+       }
+     ]
+   }
+   ```
+
+Replace `123456789012` with your AWS account ID.
+
+`"repo:your-github-org-or-username/your-repo:\*"` → Your GitHub repo
+
+Example: `"repo:my-org/my-terraform-repo:\*"`
+
+Click Update Policy ✅
+
+#### Step 4: Update GitHub Actions Workflow
+
+Finally, update your GitHub Actions workflow to use the new IAM role for authentication.
+
+1. **Update the Workflow Configuration**  
+   In your GitHub repository, edit the `.github/workflows/terraform.yml` file.
+
+2. **Configure AWS Credentials**  
+   Add or update the following step to configure AWS credentials using the IAM role you just created:
+
+   ```yaml
+   - name: Configure AWS Credentials
+     uses: aws-actions/configure-aws-credentials@v2
+     with:
+       role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsTerraformRole
+       aws-region: eu-central-1
+   ```
+
+Replace `123456789012` with your AWS account ID.
+
+---
+
+### 🚀 Deployment Steps
 
 Each time you push to the main branch, the GitHub Actions workflow automatically triggers deployment. The process includes:
 
