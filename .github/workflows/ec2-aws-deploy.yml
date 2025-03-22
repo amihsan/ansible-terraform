@@ -28,11 +28,16 @@ jobs:
         with:
           terraform_version: latest
 
-      # - name: Clean Up Previous Terraform State
-      #   run: |
-      #     rm -rf .terraform
-      #     rm -rf terraform.tfstate
-      #     rm -rf terraform.tfstate.backup
+      - name: Create S3 Bucket for Terraform State (if not exists)
+        run: |
+          aws s3api head-bucket --bucket travos-terraform-state-bucket || \
+          aws s3api create-bucket --bucket travos-terraform-state-bucket --region eu-central-1 --create-bucket-configuration LocationConstraint=eu-central-1
+
+      - name: Clean Up Previous Terraform State
+        run: |
+          rm -rf .terraform
+          rm -rf terraform.tfstate
+          rm -rf terraform.tfstate.backup
 
       - name: Terraform Init (with local backend initially)
         run: |
@@ -53,6 +58,7 @@ jobs:
         run: |
           cd terraform  # REMOVE this if your Terraform files are in the root directory
           terraform apply -auto-approve tfplan
+
 
 #################
 # name: Deploy to EC2 with Terraform and Ansible
