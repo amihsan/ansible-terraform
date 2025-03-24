@@ -5,4 +5,4 @@ variable "aws_ami_id" { default = "ami-03074cc1b166e8691" }
 variable "aws_s3_bucket" { default = "travos-terraform-state-bucket" }
 # variable "github_org" { default = "amihsan" } # Change this to your GitHub organization or user name
 # variable "github_repo" { default = "*"} # For all repos
-# variable "github_repo" { default = "ansble-terraform"} # Uncomment this line if you want to use a specific repo
+# variable "github_repo" { default = "ansble-terraform"} #if you want to use a specific repo
