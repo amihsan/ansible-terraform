@@ -2,7 +2,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://www.docker.com/)
 
 ## 💡 About
-This is part of the Master Thesis [trustlab](https://github.com/amihsan/trustlab_host/tree/ecd1923a44bbbbb7b1b38b2679bf6bb2871183b6/trust/artifacts/travos) project.
+This repository is part of the Master Thesis project, [trustlab](https://github.com/amihsan/trustlab) project. Trustlab is a web-based testbed designed to assess the trustworthiness of web applications in a decentralized web. I have added a module named [travos](https://github.com/amihsan/trustlab_host/tree/ecd1923a44bbbbb7b1b38b2679bf6bb2871183b6/trust/artifacts/travos) to the testbed.
 
 This repository contains the TRAVOS app, which integrates both the frontend and backend logic of the application. The app is deployed on AWS EC2 using GitHub Actions with Ansible, Terraform. For local development, you can use Docker Compose, Ansible, Minikube, and Kubernetes.
 
