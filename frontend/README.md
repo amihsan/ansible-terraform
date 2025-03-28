@@ -1,6 +1,6 @@
 ## 💡 About
 
-This is the Frontend part of the TRAVOS . So no business logic is here.
+This is the Frontend part of the TRAVOS project. It only includes the user interface components, so no application logic is implemented here.
 
 ### 🧱 Built With
 
